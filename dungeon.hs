@@ -21,19 +21,17 @@ data Shape = Rect
     , size :: Point
     }
     | Circle
-    { center :: Point
+    { pos :: Point
     , radius :: Int
     }
     | FillCircle
-    { center :: Point
+    { pos :: Point
     , radius :: Int
     }
     deriving (Show)
 
-rect x y w h = Rect (Point x y) (Point w h)
-fillRect x y w h = FillRect (Point x y) (Point w h)
-circle x y r = Circle (Point x y) r
-fillCircle x y r = FillCircle (Point x y) r
+rect x y w h = FillRect (Point x y) (Point w h)
+circle x y r = FillCircle (Point x y) r
 
 data Grid = Grid
     { width :: Int
@@ -43,6 +41,28 @@ data Grid = Grid
     deriving (Show)
 
 emptyGrid w h = Grid w h []
+
+data Tile = Floor | Wall
+    deriving (Show)
+
+data Map = Map
+    { tiles :: [[Tile]]
+    }
+    deriving (Show)
+
+emptyMap w h = Map . replicate h . replicate w $ Wall
+
+showTile Floor = '.'
+showTile Wall = '#'
+
+showMap (Map tiles) = concatMap showLine tiles
+    where showLine line = map showTile line ++ "\n"
+
+gridToMap grid = Map tiles
+    where tiles = map (\y -> map (\x -> pointFilled x y) [0..w]) [0..h]
+          pointFilled x y = if isFilled grid (Point x y) then Floor else Wall
+          w = width grid - 1
+          h = height grid - 1
 
 contains :: Shape -> Point -> Bool
 contains (Rect pos size) (Point x y) =
@@ -102,4 +122,4 @@ main = do
              , circle 32 8 12
              , circle 80 50 50
              ]
-    putStr $ showGrid grid
+    putStr . showMap . gridToMap $ grid
