@@ -38,17 +38,11 @@ data Shape = Rect
 rect x y w h = Rect (Point x y) (Point w h)
 circle x y r = Circle (Point x y) r
 
-data Grid = Grid
-    { width :: Int
-    , height :: Int
-    , shapes :: [Shape]
-    }
-    deriving (Show)
-
-emptyGrid w h = Grid w h []
-
 data Tile = Floor | Wall
     deriving (Show, Eq)
+
+floorTile True = Floor
+floorTile False = Wall
 
 data Dungeon = Dungeon
     { tiles :: [[Tile]]
@@ -94,40 +88,24 @@ showLitDungeon dungeon@(Dungeon tiles) = concatMap showLine points
 pointRange xlo xhi ylo yhi = [[Point x y | x <- [xlo..xhi]] | y <- [ylo..yhi]]
 pointGrid w h = pointRange 0 (w-1) 0 (h-1)
 
-gridToDungeon grid = Dungeon tiles
-    where tiles = mapMap pointFilled points
-          pointFilled p = if isFilled grid p then Floor else Wall
-          points = pointGrid w h
-          w = width grid
-          h = height grid
-
-contains :: Shape -> Point -> Bool
-contains (Rect pos size) (Point x y) = inRect x y left right top bot
+contains :: Point -> Shape -> Bool
+contains (Point x y) (Rect pos size) = inRect x y left right top bot
     where Point left top = pos
           Point right bot = pos /+/ size
-contains (Circle center r) point = dist <= r' - 0.5
+contains point (Circle center r) = dist <= r' - 0.5
     where diff = point /-/ center
           dist = magnitude diff
           r' = fromIntegral r
 
-isFilled :: Grid -> Point -> Bool
-isFilled grid point = any pointContained shapes'
-    where pointContained = contains' point
-          contains' = flip contains
-          shapes' = shapes grid
+isFilled :: [Shape] -> Point -> Bool
+isFilled shapes point = any (contains point) shapes
 
-showGrid :: Grid -> String
-showGrid grid = concat lines'
-    where charAt point
-            | isFilled grid point = '#'
-            | otherwise = ' '
-          lines' = map (\y -> map (\x -> charAt (Point x y)) [0..w] ++ "\n") [0..h]
-          w = width grid - 1
-          h = height grid - 1
+dungeonWithShapes shapes width height = Dungeon $ mapMap (floorTile . isFilled shapes) points
+    where points = pointGrid width height
 
 main :: IO ()
 main = do
-    let funcs =
+    let shapes =
             [ rect 1 1 3 4
             , rect 5 5 5 5
             , rect 2 2 10 1
@@ -135,5 +113,4 @@ main = do
             , circle 32 8 12
             , circle 80 50 50
             ]
-        grid = Grid 80 24 funcs
-    putStr . showLitDungeon . gridToDungeon $ grid
+    putStr . showLitDungeon $ dungeonWithShapes shapes 80 24
