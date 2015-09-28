@@ -1,5 +1,16 @@
 import Data.Maybe
 
+funcMap f g llist = f (\list -> map g list) llist
+mapMap = funcMap map
+concatMapMap = funcMap concatMap
+
+between n lo hi = n >= lo && n < hi
+inRect x y left right top bot = between x left right && between y top bot
+
+almostZero x = abs x < 0.5
+absMax x y = if abs x > abs y then x else y
+absMin x y = if abs x < abs y then x else y
+
 data Point = Point
     { x :: Int
     , y :: Int
@@ -56,20 +67,23 @@ dimensions llist =
        else let w = length $ head llist
             in (w, h)
 
+dungeonDim (Dungeon tiles) = dimensions tiles
+
 tileAt (Dungeon tiles) (Point x y)
-    | y >= h = Nothing
-    | x >= w = Nothing
+    | not $ inRect x y 0 w 0 h = Nothing
     | otherwise = Just ((tiles !! y) !! x)
     where (w, h) = dimensions tiles
 
 isWall d p = (== Wall) . fromMaybe Wall $ tileAt d p
 
-isLit d p = True
+isLit d p = any (not . isWall d) neighbors
+    where neighbors = concatMapMap (/+/ p) pointDiffs
+          pointDiffs = pointRange (-1) 1 (-1) 1
 
-showMap (Dungeon tiles) = concatMap showLine tiles
+showDungeon (Dungeon tiles) = concatMap showLine tiles
     where showLine line = map showTile line ++ "\n"
 
-showLitMap dungeon@(Dungeon tiles) = concatMap showLine points
+showLitDungeon dungeon@(Dungeon tiles) = concatMap showLine points
     where showLine line = map showPoint line ++ "\n"
           points = pointGrid w h
           (w, h) = dimensions tiles
@@ -77,11 +91,10 @@ showLitMap dungeon@(Dungeon tiles) = concatMap showLine points
             | not $ isLit dungeon point = ' '
             | otherwise = fromMaybe ' ' $ tileAt dungeon point >>= (\t -> Just . showTile $ t)
 
-mapMap f llist = map (\list -> map f list) llist
 pointRange xlo xhi ylo yhi = [[Point x y | x <- [xlo..xhi]] | y <- [ylo..yhi]]
 pointGrid w h = pointRange 0 (w-1) 0 (h-1)
 
-gridToMap grid = Dungeon tiles
+gridToDungeon grid = Dungeon tiles
     where tiles = mapMap pointFilled points
           pointFilled p = if isFilled grid p then Floor else Wall
           points = pointGrid w h
@@ -96,16 +109,6 @@ contains (Circle center r) point = dist <= r' - 0.5
     where diff = point /-/ center
           dist = magnitude diff
           r' = fromIntegral r
-
-between n lo hi = n >= lo && n < hi
-
-almostZero :: Float -> Bool
-almostZero x = abs x < 0.5
-
-absMax x y = if abs x > abs y then x else y
-absMin x y = if abs x < abs y then x else y
-
-inRect x y left right top bot = between x left right && between y top bot
 
 isFilled :: Grid -> Point -> Bool
 isFilled grid point = any pointContained shapes'
@@ -124,12 +127,13 @@ showGrid grid = concat lines'
 
 main :: IO ()
 main = do
-    let grid = Grid 80 24
-             [ rect 1 1 3 4
-             , rect 5 5 5 5
-             , rect 2 2 10 1
-             , circle 16 8 4
-             , circle 32 8 12
-             , circle 80 50 50
-             ]
-    putStr . showLitMap . gridToMap $ grid
+    let funcs =
+            [ rect 1 1 3 4
+            , rect 5 5 5 5
+            , rect 2 2 10 1
+            , circle 16 8 4
+            , circle 32 8 12
+            , circle 80 50 50
+            ]
+        grid = Grid 80 24 funcs
+    putStr . showLitDungeon . gridToDungeon $ grid
