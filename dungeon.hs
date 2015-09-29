@@ -1,7 +1,12 @@
+import Control.Applicative
 import Data.Maybe
 
 funcMap f g llist = f (\list -> map g list) llist
+
+mapMap :: (a -> b) -> [[a]] -> [[b]]
 mapMap = funcMap map
+
+concatMapMap :: (a -> b) -> [[a]] -> [b]
 concatMapMap = funcMap concatMap
 
 between n lo hi = n >= lo && n < hi
@@ -71,19 +76,19 @@ tileAt (Dungeon tiles) (Point x y)
 isWall d p = (== Wall) . fromMaybe Wall $ tileAt d p
 
 isLit d p = any (not . isWall d) neighbors
-    where neighbors = concatMapMap (/+/ p) pointDiffs
-          pointDiffs = pointRange (-1) 1 (-1) 1
+    where neighbors = map (/+/ p) pointDiffs
+          pointDiffs = concat $ pointRange (-1) 1 (-1) 1
 
 showDungeon (Dungeon tiles) = concatMap showLine tiles
     where showLine line = map showTile line ++ "\n"
 
-showLitDungeon dungeon@(Dungeon tiles) = concatMap showLine points
+showLitDungeon dungeon = concatMap showLine points
     where showLine line = map showPoint line ++ "\n"
           points = pointGrid w h
-          (w, h) = dimensions tiles
+          (w, h) = dungeonDim dungeon
           showPoint point
             | not $ isLit dungeon point = ' '
-            | otherwise = fromMaybe ' ' $ tileAt dungeon point >>= (\t -> Just . showTile $ t)
+            | otherwise = fromMaybe ' ' $ showTile <$> tileAt dungeon point
 
 pointRange xlo xhi ylo yhi = [[Point x y | x <- [xlo..xhi]] | y <- [ylo..yhi]]
 pointGrid w h = pointRange 0 (w-1) 0 (h-1)
