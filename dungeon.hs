@@ -1,5 +1,8 @@
 import Control.Applicative
+import Control.Monad.State.Lazy
 import Data.Maybe
+import Data.Time.Clock.POSIX
+import System.Random
 
 funcMap f g llist = f (\list -> map g list) llist
 
@@ -108,14 +111,39 @@ isFilled shapes point = any (contains point) shapes
 dungeonWithShapes shapes width height = Dungeon $ mapMap (floorTile . isFilled shapes) points
     where points = pointGrid width height
 
+type RandState a = State StdGen a
+
+randMod :: Int -> RandState Int
+randMod modulo = do
+    n <- state random
+    return $ n `mod` modulo
+
+randR :: Int -> Int -> RandState Int
+randR lo hi = state $ randomR (lo, hi)
+
+randElem :: [a] -> RandState a
+randElem list = do
+    let len = length list
+    i <- randMod len
+    return $ list !! i
+
+randomRect :: RandState Shape
+randomRect = do
+    w <- randR 1 12
+    h <- randR 1 6
+    x <- randR 0 70
+    y <- randR 0 18
+    return $ rect x y w h
+
+randomShapes :: RandState [Shape]
+randomShapes = do
+    numShapes <- randR 3 5
+    mapM (\_ -> randomRect) [0..numShapes]
+
 main :: IO ()
 main = do
-    let shapes =
-            [ rect 1 1 3 4
-            , rect 5 5 5 5
-            , rect 2 2 10 1
-            , circle 16 8 4
-            , circle 32 8 12
-            , circle 80 50 50
-            ]
-    putStr . showLitDungeon $ dungeonWithShapes shapes 80 24
+    curEpoch <- round <$> getPOSIXTime
+    let gen = mkStdGen curEpoch
+        shapes = evalState randomShapes gen
+        dungeon = dungeonWithShapes shapes 80 24
+    putStr . showLitDungeon $ dungeon
