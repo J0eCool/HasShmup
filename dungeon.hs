@@ -1,5 +1,6 @@
 import Control.Applicative
 import Control.Monad.State.Lazy
+import Data.List
 import Data.Maybe
 import Data.Time.Clock.POSIX
 import System.Random
@@ -40,6 +41,14 @@ data Shape = Rect
     | Circle
     { pos :: Point
     , radius :: Int
+    }
+    | HorizontalLine
+    { pos :: Point
+    , lineLength :: Int
+    }
+    | VerticalLine
+    { pos :: Point
+    , lineLength :: Int
     }
     deriving (Show)
 
@@ -104,6 +113,8 @@ contains point (Circle center r) = dist <= r' - 0.5
     where diff = point /-/ center
           dist = magnitude diff
           r' = fromIntegral r
+contains (Point x y) (HorizontalLine (Point lx ly) len) = inRect x y lx (lx + len) ly (ly + 1)
+contains (Point x y) (VerticalLine (Point lx ly) len) = inRect x y lx (lx + 1) ly (ly + len)
 
 isFilled :: [Shape] -> Point -> Bool
 isFilled shapes point = any (contains point) shapes
@@ -129,21 +140,43 @@ randElem list = do
 
 randomRect :: RandState Shape
 randomRect = do
-    w <- randR 1 12
-    h <- randR 1 6
-    x <- randR 0 70
-    y <- randR 0 18
+    w <- randR 2 12
+    h <- randR 2 6
+    x <- randR 1 70
+    y <- randR 1 40
     return $ rect x y w h
+
+connectBy _ [] = []
+connectBy _ [x] = [x]
+connectBy f (a:b:xs) = a : rs ++ connectBy f (b:xs)
+    where rs = f a b
+
+connectRoomList rooms = connectBy connectRooms rooms
+connectRooms a b = [h, v]
+    where aPoint@(Point ax ay) = pos a
+          bPoint@(Point bx by) = pos b
+          hDist = abs (ax - bx)
+          vDist = abs (ay - by)
+          goRight = ax < bx
+          goDown = ay < by
+          hPoint@(Point hx hy) = Point (if goRight then ax else ax - hDist) ay
+          h = HorizontalLine hPoint (hDist + 1)
+          vPoint = Point (if goRight then hx + hDist else hx) (if goDown then ay else ay - vDist)
+          v = VerticalLine vPoint (vDist + 1)
 
 randomShapes :: RandState [Shape]
 randomShapes = do
     numShapes <- randR 3 5
-    mapM (\_ -> randomRect) [0..numShapes]
+    rects <- replicateM numShapes randomRect
+    return $ connectRoomList rects
+
+dungeonFromSeed seed = dungeonWithShapes shapes 80 48
+    where shapes = evalState randomShapes gen
+          gen = mkStdGen seed
+
+printDungeonFromSeed = putStr . showLitDungeon . dungeonFromSeed
 
 main :: IO ()
 main = do
     curEpoch <- round <$> getPOSIXTime
-    let gen = mkStdGen curEpoch
-        shapes = evalState randomShapes gen
-        dungeon = dungeonWithShapes shapes 80 24
-    putStr . showLitDungeon $ dungeon
+    printDungeonFromSeed curEpoch
