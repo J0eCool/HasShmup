@@ -125,9 +125,7 @@ dungeonWithShapes shapes width height = Dungeon $ mapMap (floorTile . isFilled s
 type RandState a = State StdGen a
 
 randMod :: Int -> RandState Int
-randMod modulo = do
-    n <- state random
-    return $ n `mod` modulo
+randMod modulo = (`mod` modulo) <$> state random
 
 randR :: Int -> Int -> RandState Int
 randR lo hi = state $ randomR (lo, hi)
@@ -138,20 +136,25 @@ randElem list = do
     i <- randMod len
     return $ list !! i
 
-randomRect :: RandState Shape
-randomRect = do
+randRect :: RandState Shape
+randRect = do
     w <- randR 2 12
     h <- randR 2 6
     x <- randR 1 70
     y <- randR 1 40
     return $ rect x y w h
 
-connectBy _ [] = []
-connectBy _ [x] = [x]
-connectBy f (a:b:xs) = a : rs ++ connectBy f (b:xs)
+
+randPoint (Point x y) = Point <$> randMod x <*> randMod y
+
+randPointInside (Rect pos size) = (/+/) <$> randPoint size <*> return pos
+
+intersperseWith _ [] = []
+intersperseWith _ [x] = [x]
+intersperseWith f (a:b:xs) = a : rs ++ intersperseWith f (b:xs)
     where rs = f a b
 
-connectRoomList rooms = connectBy connectRooms rooms
+connectRoomList rooms = intersperseWith connectRooms rooms
 connectRooms a b = [h, v]
     where aPoint@(Point ax ay) = pos a
           bPoint@(Point bx by) = pos b
@@ -167,8 +170,19 @@ connectRooms a b = [h, v]
 randomShapes :: RandState [Shape]
 randomShapes = do
     numShapes <- randR 3 5
-    rects <- replicateM numShapes randomRect
+    rects <- replicateM numShapes randRect
     return $ connectRoomList rects
+
+dungeonFromGrid xRooms yRooms roomWidth roomHeight =
+    dungeonWithShapes shapes totalWidth totalHeight
+    where totalWidth = xRooms * xDelta + 1
+          totalHeight = yRooms * yDelta + 1
+          shapes = liftM2 (\x y -> rect x y roomWidth roomHeight) xs ys
+          xs = take xRooms [1,(xDelta + 1)..]
+          ys = take yRooms [1,(yDelta + 1)..]
+          xDelta = roomWidth + 1
+          yDelta = roomHeight + 1
+
 
 dungeonFromSeed seed = dungeonWithShapes shapes 80 48
     where shapes = evalState randomShapes gen
