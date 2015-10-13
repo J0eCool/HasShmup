@@ -1,9 +1,12 @@
 import Control.Applicative
 import Control.Monad.State.Lazy
+import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Time.Clock.POSIX
 import System.Random
+
+import Debug.Trace
 
 funcMap f g llist = f (\list -> map g list) llist
 
@@ -130,6 +133,8 @@ randMod modulo = (`mod` modulo) <$> state random
 randR :: Int -> Int -> RandState Int
 randR lo hi = state $ randomR (lo, hi)
 
+randDelta d = randR (-d) d
+
 randElem :: [a] -> RandState a
 randElem list = do
     let len = length list
@@ -173,24 +178,71 @@ randomShapes = do
     rects <- replicateM numShapes randRect
     return $ connectRoomList rects
 
-dungeonFromGrid xRooms yRooms roomWidth roomHeight =
-    dungeonWithShapes shapes totalWidth totalHeight
-    where totalWidth = xRooms * xDelta + 1
-          totalHeight = yRooms * yDelta + 1
-          shapes = liftM2 (\x y -> rect x y roomWidth roomHeight) xs ys
-          xs = take xRooms [1,(xDelta + 1)..]
-          ys = take yRooms [1,(yDelta + 1)..]
-          xDelta = roomWidth + 1
-          yDelta = roomHeight + 1
-
-
 dungeonFromSeed seed = dungeonWithShapes shapes 80 48
     where shapes = evalState randomShapes gen
           gen = mkStdGen seed
 
 printDungeonFromSeed = putStr . showLitDungeon . dungeonFromSeed
 
+gridDungeon xRooms yRooms roomWidth roomHeight = do
+    let totalWidth = xRooms * xDelta + 1
+        totalHeight = yRooms * yDelta + 1
+        xDelta = roomWidth + 1
+        yDelta = roomHeight + 1
+        xs_0 = replicate (yRooms + 1) . take (xRooms + 1) $ [1,(xDelta + 1)..]
+        ys_0 = map (replicate (xRooms + 1)) . take (yRooms + 1) $ [1,(yDelta + 1)..]
+    xs <- mapM (randomize 2) . map dropLast $ xs_0 -- todo: randomize
+    --ys <- randomCascade ys_0
+    let 
+        --xs = map dropLast xs_0
+        ys = map dropLast ys_0
+        ws = map calcWidths xs
+        hs = map calcWidths (invert ys)
+        shapes = traceShowId $ zipWith4 rect (concat xs) (concat ys) (concat ws) (concat hs)
+    return $ dungeonWithShapes shapes totalWidth totalHeight
+
+invert llist = aux llist acc_0
+    where aux [] acc = acc
+          aux (xs:xss) acc = zipWith (:) xs acc'
+            where acc' = aux xss acc
+          acc_0 = replicate (length (head llist)) []
+
+calcWidths (a:b:rest) = (b - a - 1) : calcWidths (b:rest)
+calcWidths _ = []
+
+doFromBack f = reverse . f . reverse
+dropEnd n = doFromBack (drop n)
+dropLast = dropEnd 1
+takeEnd n = doFromBack (take n)
+
+randomize _ [] = return []
+randomize delta (x:xs) = do
+    d <- randDelta delta
+    xs' <- randomize delta xs
+    return $ x + d : xs'
+
+clamp lo hi x = min hi . max lo $ x
+clampAbs val = clamp (-val) val
+
+randomCascade llist = do
+    diffs_0 <- randomize deltaStep . replicate len $ 0
+    aux llist diffs_0
+    where deltaStep = 2
+          deltaMax = 4
+          len = length . head $ llist
+          aux [] _ = return []
+          aux (xs:rest) diffs = do
+            diffs' <- map (clampAbs deltaMax) <$> randomize deltaStep diffs
+            rest' <- aux rest diffs'
+            let xs' = sort . zipWith (+) diffs $ xs
+            return $ xs' : rest'
+
+runSeed seed rand = evalState rand (mkStdGen seed)
+
+gridDungeonFromSeed seed = runSeed seed (gridDungeon 8 4 7 5)
+printGridDungeonFromSeed = putStr . showLitDungeon . gridDungeonFromSeed
+
 main :: IO ()
 main = do
     curEpoch <- round <$> getPOSIXTime
-    printDungeonFromSeed curEpoch
+    printGridDungeonFromSeed curEpoch
