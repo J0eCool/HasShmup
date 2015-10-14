@@ -1,28 +1,35 @@
 {-# LANGUAGE TemplateHaskell #-} 
 
-module World (World, newWorld, worldUpdate, timeSinceStart, userAngle) where
+module World (World, WorldInput, newWorld,
+    worldUpdate, worldDraw, timeSinceStart, deltaTime) where
 
 import Control.Lens
 import Control.Monad.State.Lazy
 
+import Entity
 import PlayerInput
+
+type WorldInput = (PlayerInput, World)
 
 data World = World
     { _lastTimestamp :: Double
     , _timeSinceStart :: Float
-    , _userAngle :: Float
+    , _deltaTime :: Float
+    , _entities :: [Entity WorldInput]
     }
-    deriving Show
 makeLenses ''World
 
-newWorld t = World t 0 0
+newWorld t ents = World t 0 0 ents
 
 worldUpdate input t world = execState worldState world
     where worldState = do
             oldT <- use lastTimestamp
             let dT = realToFrac $ t - oldT
+            deltaTime .= dT
             lastTimestamp .= t
             timeSinceStart += dT
-            userAngle += 3 * dT * fromIntegral (xDir input)
+            entities .= map (\x -> (x ^. update) (input, world) x) (world ^. entities)
+
+worldDraw world = mapM_ (\x -> x ^. draw $ x) (world ^. entities)
 
 

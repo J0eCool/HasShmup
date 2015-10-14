@@ -6,72 +6,101 @@ import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Graphics.Rendering.OpenGL
 import Graphics.UI.GLUT
+import System.Exit
 
-import World
+import Entity
 import PlayerInput
+import Vec
+import World
 
 color3f r g b = color $ Color3 r g (b :: GLfloat)
 vertex3f x y z = vertex $ Vertex3 x y (z :: GLfloat)
 
-data Vec = Vec2 Float Float
-    deriving (Eq, Show)
-
-vec (x, y) = Vec2 x y
-unitVec t = Vec2 (cos t) (sin t)
-
-flatVecOp op (Vec2 x1 y1) (Vec2 x2 y2) = Vec2 (op x1 x2) (op y1 y2)
-(/+/) = flatVecOp (+)
-(/-/) = flatVecOp (-)
-(/*/) = flatVecOp (*)
-
-hoistVecOp op (Vec2 x y) = Vec2 (op x) (op y)
-s .*/ v = hoistVecOp (* s) v
-v /*. s = hoistVecOp (* s) v
-
 vertexVec (Vec2 x y) = vertex3f (realToFrac x) (realToFrac y) 0
 
-square s pos = renderPrimitive Quads vecs
-    where vecs = mapM vertexVec corners
-          offsets = [ (s, s)
-                    , (-s, s)
-                    , (-s, -s)
-                    , (s, -s)
+type RGB = (Float, Float, Float)
+
+colorRGB (r, g, b) = color3f (realToFrac r) (realToFrac g) (realToFrac b)
+
+drawRect w h pos = renderPrimitive Quads vecs
+    where vecs = mapM_ vertexVec corners
+          offsets = [ (w, h)
+                    , (-w, h)
+                    , (-w, -h)
+                    , (w, -h)
                     ]
-          vecOffsets = map vec offsets
+          vecOffsets = map vec2 offsets
           corners = map (/+/ pos) vecOffsets
+drawSquare size = drawRect size size
 
 display :: IORef World -> DisplayCallback
 display worldRef = do
     world <- get worldRef
-    let t = world ^. timeSinceStart
-        ang = t + world ^. userAngle
-
     clear [ColorBuffer]
 
-    color3f 1 0 0
-    square 0.2 (Vec2 0 0)
+    worldDraw world
 
-    color3f 0 1 1
-    square 0.1 (0.8 .*/ unitVec ang)
+    --color3f 1 0 0
+    --square 0.2 (Vec2 0 0)
+
+    --color3f 0 1 1
+    --square 0.1 (0.8 .*/ unitVec ang)
 
     flush
 
-update :: IORef World -> IORef PlayerInput -> IdleCallback
-update worldRef inputRef = do
+updateWorld :: IORef World -> IORef PlayerInput -> IdleCallback
+updateWorld worldRef inputRef = do
     world <- get worldRef
     input <- get inputRef
     t <- realToFrac <$> getPOSIXTime
     worldRef $~! worldUpdate input t
 
-    postRedisplay Nothing
+    if shouldQuit input
+    then exitSuccess
+    else postRedisplay Nothing
+
+drawEnt :: RGB -> Entity WorldInput -> IO ()
+drawEnt color ent = do
+    colorRGB color
+    drawRect w h p
+    where (Vec2 w h) = ent ^. size
+          p = ent ^. pos
+
+updateBall :: Float -> Float -> WorldInput -> Entity WorldInput -> Entity WorldInput
+updateBall dist offset (_, world) ball = set pos newPos ball
+    where newPos = dist .*/ unitVec ang
+          ang = world ^. timeSinceStart + offset
+
+--newBall :: 
+newBall pos dist offset = newEntity pos size update draw
+    where size = Vec2 0.1 0.1
+          update = updateBall dist offset
+          draw = drawEnt color
+          color = (0, 1, 1)
+
+newPlayer pos = newEntity pos size update draw
+    where size = Vec2 0.2 0.25
+          update = updatePlayer 1
+          draw = drawEnt color
+          color = (1, 0, 0)
+
+updatePlayer speed (input, world) player = pos `over` (/+/ delta) $ player
+    where dT = world ^. deltaTime
+          dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
+          delta = (speed * dT) .*/ dir
 
 main = do
     (programName, _) <- getArgsAndInitialize
     win <- createWindow "Hi guyes"
     t <- realToFrac <$> getPOSIXTime
-    worldRef <- newIORef (newWorld t)
+    let ents =
+            [ newBall (Vec2 0 0.8) 0.8 pi
+            , newBall (Vec2 0 0) 0.8 0
+            , newPlayer (Vec2 0 0)
+            ]
+    worldRef <- newIORef (newWorld t ents)
     inputRef <- newIORef newInput
     displayCallback $= display worldRef
-    idleCallback $= Just (update worldRef inputRef)
+    idleCallback $= Just (updateWorld worldRef inputRef)
     keyboardMouseCallback $= Just (handleInput inputRef)
     mainLoop
