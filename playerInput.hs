@@ -42,7 +42,7 @@ handleInput inputRef key keyState _ _ = setInput $ case key of
     (Char 'w') -> up
     (Char 's') -> down
     (Char '\ESC') -> quit
-    _ -> dummyLens
+    _ -> ignore
     where isKeyDown = keyState == Down
           setInput lens = inputRef $~! lens .~ isKeyDown
-          dummyLens = lens (\_ -> False) (\x _ -> x)
+          ignore = lens (\_ -> False) (\x _ -> x)

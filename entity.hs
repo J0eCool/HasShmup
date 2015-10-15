@@ -16,4 +16,6 @@ data Entity i = EntityImpl
     }
 makeLenses ''Entity
 
-newEntity pos size update draw = EntityImpl pos size update draw
+newEntity pos size = EntityImpl pos size update draw
+    where update _ ent = ent
+          draw ent = return ()

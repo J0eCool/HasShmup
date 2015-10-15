@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-} 
 
-module World (World, WorldInput, newWorld,
+module World (World, WorldInput, WorldEntity, newWorld,
     worldUpdate, worldDraw, timeSinceStart, deltaTime) where
 
 import Control.Lens
@@ -10,12 +10,13 @@ import Entity
 import PlayerInput
 
 type WorldInput = (PlayerInput, World)
+type WorldEntity = Entity WorldInput
 
 data World = World
     { _lastTimestamp :: Double
     , _timeSinceStart :: Float
     , _deltaTime :: Float
-    , _entities :: [Entity WorldInput]
+    , _entities :: [WorldEntity]
     }
 makeLenses ''World
 
