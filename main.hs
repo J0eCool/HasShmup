@@ -22,6 +22,7 @@ type RGB = (Float, Float, Float)
 
 colorRGB (r, g, b) = color3f (realToFrac r) (realToFrac g) (realToFrac b)
 
+drawRect :: Float -> Float -> Vec2 -> IO ()
 drawRect w h pos = renderPrimitive Quads vecs
     where vecs = mapM_ vertexVec corners
           offsets = [ (w, h)
@@ -40,24 +41,7 @@ display worldRef = do
 
     worldDraw world
 
-    --color3f 1 0 0
-    --square 0.2 (Vec2 0 0)
-
-    --color3f 0 1 1
-    --square 0.1 (0.8 .*/ unitVec ang)
-
     swapBuffers
-
-updateWorld :: IORef World -> IORef PlayerInput -> IdleCallback
-updateWorld worldRef inputRef = do
-    world <- get worldRef
-    input <- get inputRef
-    t <- realToFrac <$> getPOSIXTime
-    worldRef $~! worldUpdate input t
-
-    if shouldQuit input
-    then exitSuccess
-    else postRedisplay Nothing
 
 drawEnt :: RGB -> WorldEntity -> IO ()
 drawEnt color ent = do
@@ -66,22 +50,28 @@ drawEnt color ent = do
     where (Vec2 w h) = ent ^. size
           p = ent ^. pos
 
+----------------------------------------
+
+newBall :: Vec2 -> Float -> Float -> Float -> WorldEntity
+newBall pos dist offset remTime = newEntity pos size
+    & update .~ updateBall dist offset
+    & draw .~ drawEnt color
+    & shouldRemove .~ (\(_, world) _ -> world ^. timeSinceStart > remTime)
+    where size = Vec2 0.1 0.1
+          color = (0, 1, 1)
+
 updateBall :: Float -> Float -> WorldInput -> WorldEntity -> WorldEntity
 updateBall dist offset (_, world) = pos .~ newPos
     where newPos = dist .*/ unitVec ang
           ang = world ^. timeSinceStart + offset
 
-newBall :: Vec2 -> Float -> Float -> WorldEntity
-newBall pos dist offset = newEntity pos size
-    & update .~ updateBall dist offset
-    & draw .~ drawEnt color
-    where size = Vec2 0.1 0.1
-          color = (0, 1, 1)
+----------------------------------------
 
 newPlayer :: Vec2 -> WorldEntity
 newPlayer pos = newEntity pos size
     & update .~ updatePlayer 1
     & draw .~ drawEnt color
+    & entsToSpawn .~ spawnFromPlayer
     where size = Vec2 0.2 0.25
           color = (1, 0, 0)
 
@@ -91,20 +81,53 @@ updatePlayer speed (input, world) = pos %~ (/+/ delta)
           dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
           delta = (speed * dT) .*/ dir
 
+spawnFromPlayer :: WorldInput -> WorldEntity -> [WorldEntity]
+spawnFromPlayer (input, world) player =
+    if isShooting input
+    then [newBullet (player ^. pos) world]
+    else []
+
+----------------------------------------
+
+newBullet :: Vec2 -> World -> WorldEntity
+newBullet p world = newEntity p size
+    & update .~ (\(_, world) -> pos %~ (/+/ ((Vec2 0 4) /*. (world ^. deltaTime))))
+    & draw .~ drawEnt (1, 1, 0)
+    & shouldRemove .~ (\(_, w) _ -> w ^. timeSinceStart > endTime)
+    where size = Vec2 0.08 0.12
+          endTime = world ^. timeSinceStart + 1.5
+
+updateWorld :: IORef World -> IORef PlayerInput -> IdleCallback
+updateWorld worldRef inputRef = do
+    world <- get worldRef
+    input <- get inputRef
+    t <- realToFrac <$> getPOSIXTime
+    worldRef $~! worldUpdate input t
+    inputRef $~! updateInput
+
+    if shouldQuit input
+    then exitSuccess
+    else postRedisplay Nothing
+
+----------------------------------------
+
 main :: IO ()
 main = do
     (programName, args) <- getArgsAndInitialize
     --initialDisplayMode $= [WithDepthBuffer, DoubleBuffered]
     win <- createWindow "Hi guyes"
+    
     t <- realToFrac <$> getPOSIXTime
     let ents =
-            [ newBall (Vec2 0 0.8) 0.8 pi
+            [ newBall (Vec2 0 0.8) 0.8 pi 5
+            , newBall (Vec2 0.8 0) 0.8 0 10
             , newPlayer (Vec2 0 0)
-            , newBall (Vec2 0 0) 0.8 0
             ]
     worldRef <- newIORef (newWorld t ents)
     inputRef <- newIORef newInput
+
     displayCallback $= display worldRef
     idleCallback $= Just (updateWorld worldRef inputRef)
     keyboardMouseCallback $= Just (handleInput inputRef)
+
     mainLoop
