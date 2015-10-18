@@ -40,8 +40,6 @@ worldUpdate input t world = execState worldState world
                 . (\es -> es ++ concatMap (inputSelf entsToSpawn) es)
                 . map (inputSelf update)
 
-            --entities .= filter (\x -> not . (x ^. shouldRemove) entInput $ x) (world ^. entities)
-
 worldDraw world = mapM_ (\x -> x ^. draw $ x) (world ^. entities)
 
 
