@@ -16,11 +16,20 @@ data World = World
     { _lastTimestamp :: Double
     , _timeSinceStart :: Float
     , _deltaTime :: Float
+    , _nextEntityId :: Int
     , _entities :: [WorldEntity]
     }
+    deriving (Show)
 makeLenses ''World
 
-newWorld t ents = World t 0 0 ents
+addEntity ent world = world
+    & nextEntityId +~ 1
+    & entities %~ (ent' :)
+    where ent' = ent & entId .~ curId
+          curId = world ^. nextEntityId
+
+newWorld t ents = foldr addEntity baseWorld ents
+    where baseWorld = World t 0 0 0 []
 
 selff f l = (\x -> (f (x ^. l)) x)
 self = selff id

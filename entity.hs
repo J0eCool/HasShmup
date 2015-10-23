@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-} 
 
-module Entity (Entity, newEntity, pos, size, update, draw, entsToSpawn, shouldRemove) where
+module Entity (Entity, newEntity, entId, pos, size,
+  update, draw, entsToSpawn, shouldRemove) where
 
 import Control.Lens
 import Control.Monad.State.Lazy
@@ -9,7 +10,8 @@ import PlayerInput
 import Vec
 
 data Entity i = EntityImpl
-    { _pos :: Vec2f
+    { _entId :: Int
+    , _pos :: Vec2f
     , _size :: Vec2f
     , _update :: i -> Entity i -> Entity i
     , _draw :: Entity i -> IO ()
@@ -18,7 +20,13 @@ data Entity i = EntityImpl
     }
 makeLenses ''Entity
 
-newEntity pos size = EntityImpl pos size update draw entsToSpawn shouldRemove
+instance Show (Entity i) where
+  show e = "<Entity_" ++ show (e ^. entId)
+    ++ " Pos=" ++ show (e ^. pos)
+    ++ " Size=" ++ show (e ^. size)
+    ++ ">"
+
+newEntity pos size = EntityImpl 0 pos size update draw entsToSpawn shouldRemove
     where update _ = id
           draw _ = return ()
           entsToSpawn _ _ = []
