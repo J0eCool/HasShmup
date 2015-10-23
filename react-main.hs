@@ -28,7 +28,7 @@ data KeyboardMouse = KeyboardMouse
 data Inputs t = Inputs
     { time :: Behavior t DiffTime
     , keyboardMouse :: Event t KeyboardMouse
-    , pos :: Behavior t Vec2
+    , pos :: Behavior t Vec2f
     }
 
 data Outputs t = Outputs
@@ -87,10 +87,10 @@ program inputs = Outputs
     }
 
 positionChange (KeyboardMouse (Char c) Down _ _) = case c of
-    'a' -> Just (/-/ Vec2 dist 0)
-    'd' -> Just (/+/ Vec2 dist 0)
-    'w' -> Just (/+/ Vec2 0 dist)
-    's' -> Just (/-/ Vec2 0 dist)
+    'a' -> Just . (+) $ (Vec2 (-dist) 0)
+    'd' -> Just . (+) $ (Vec2 dist 0)
+    'w' -> Just . (+) $ (Vec2 0 dist)
+    's' -> Just . (+) $ (Vec2 0 (-dist))
     _ -> Nothing
     where dist = 0.1
 positionChange _ = Nothing
@@ -100,7 +100,7 @@ positionB = accumB (Vec2 0 0) . filterJust . fmap positionChange . keyboardMouse
 --angleB inputs = accumB 0 . (+ time inputs)
 --    where
 
-drawWorld :: Float -> Vec2 -> DisplayCallback
+drawWorld :: Float -> Vec2f -> DisplayCallback
 drawWorld t pos = do
     clear [ColorBuffer]
 

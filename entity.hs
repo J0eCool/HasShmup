@@ -9,8 +9,8 @@ import PlayerInput
 import Vec
 
 data Entity i = EntityImpl
-    { _pos :: Vec2
-    , _size :: Vec2
+    { _pos :: Vec2f
+    , _size :: Vec2f
     , _update :: i -> Entity i -> Entity i
     , _draw :: Entity i -> IO ()
     , _entsToSpawn :: i -> Entity i -> [Entity i]

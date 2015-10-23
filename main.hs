@@ -32,7 +32,7 @@ drawEnt color ent = do
 
 ----------------------------------------
 
-newBall :: Vec2 -> Float -> Float -> Float -> WorldEntity
+newBall :: Vec2f -> Float -> Float -> Float -> WorldEntity
 newBall pos dist offset remTime = newEntity pos size
     & update .~ updateBall dist offset
     & draw .~ drawEnt color
@@ -47,7 +47,7 @@ updateBall dist offset (_, world) = pos .~ newPos
 
 ----------------------------------------
 
-newPlayer :: Vec2 -> WorldEntity
+newPlayer :: Vec2f -> WorldEntity
 newPlayer pos = newEntity pos size
     & update .~ updatePlayer 1
     & draw .~ drawEnt color
@@ -56,7 +56,7 @@ newPlayer pos = newEntity pos size
           color = (1, 0, 0)
 
 updatePlayer :: Float -> WorldInput -> WorldEntity -> WorldEntity
-updatePlayer speed (input, world) = pos %~ (/+/ delta)
+updatePlayer speed (input, world) = pos %~ (+ delta)
     where dT = world ^. deltaTime
           dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
           delta = (speed * dT) .*/ dir
@@ -69,9 +69,9 @@ spawnFromPlayer (input, world) player =
 
 ----------------------------------------
 
-newBullet :: Vec2 -> World -> WorldEntity
+newBullet :: Vec2f -> World -> WorldEntity
 newBullet p world = newEntity p size
-    & update .~ (\(_, world) -> pos %~ (/+/ ((Vec2 0 4) /*. (world ^. deltaTime))))
+    & update .~ (\(_, world) -> pos %~ (+ ((Vec2 0 4) /*. (world ^. deltaTime))))
     & draw .~ drawEnt (1, 1, 0)
     & shouldRemove .~ (\(_, w) _ -> w ^. timeSinceStart > endTime)
     where size = Vec2 0.08 0.12

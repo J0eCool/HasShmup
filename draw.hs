@@ -16,10 +16,10 @@ colorRGB (r, g, b) = color3f (realToFrac r) (realToFrac g) (realToFrac b)
 vertex3f :: GLfloat -> GLfloat -> GLfloat -> IO ()
 vertex3f x y z = vertex $ Vertex3 x y z
 
-vertexVec :: Vec2 -> IO ()
+vertexVec :: Vec2f -> IO ()
 vertexVec (Vec2 x y) = vertex3f (realToFrac x) (realToFrac y) 0
 
-drawRect :: Float -> Float -> Vec2 -> IO ()
+drawRect :: Float -> Float -> Vec2f -> IO ()
 drawRect w h pos = renderPrimitive Quads vecs
     where vecs = mapM_ vertexVec corners
           offsets = [ (w, h)
@@ -28,7 +28,7 @@ drawRect w h pos = renderPrimitive Quads vecs
                     , (w, -h)
                     ]
           vecOffsets = map vec2 offsets
-          corners = map (/+/ pos) vecOffsets
+          corners = map (+ pos) vecOffsets
 
-drawSquare :: Float -> Vec2 -> IO ()
+drawSquare :: Float -> Vec2f -> IO ()
 drawSquare size = drawRect size size
