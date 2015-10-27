@@ -20,6 +20,6 @@ vec2 (x, y) = Vec2 x y
 
 unitVec t = Vec2 (cos t) (sin t)
 
-s .*/ v = fmap (* s) v
-v /*. s = fmap (* s) v
+s .* v = fmap (* s) v
+v *. s = fmap (* s) v
 
