@@ -1,5 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 import Control.Lens
 import Data.IORef
 import Data.Time.Clock

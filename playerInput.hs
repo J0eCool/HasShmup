@@ -7,7 +7,6 @@ import Control.Lens
 import Control.Monad.State.Lazy
 import Data.IORef
 import Graphics.UI.GLUT hiding (None)
-import System.Exit
 
 data ButtonState = None | Pressed | Held | Released
     deriving (Show, Eq)
@@ -39,7 +38,7 @@ yDir :: PlayerInput -> Int
 yDir = axis up down
 
 isShooting :: PlayerInput -> Bool
-isShooting input = input ^. shoot == Pressed
+isShooting input = signal (input ^. shoot) > 0
 
 shouldQuit :: PlayerInput -> Bool
 shouldQuit input = input ^. quit /= None
