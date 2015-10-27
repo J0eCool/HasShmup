@@ -1,9 +1,8 @@
 module Draw where
 
-import Graphics.Rendering.OpenGL
+import Graphics.Rendering.OpenGL hiding (Rect)
 
 import Vec
-
 
 type RGB = (Float, Float, Float)
 
@@ -19,8 +18,8 @@ vertex3f x y z = vertex $ Vertex3 x y z
 vertexVec :: Vec2f -> IO ()
 vertexVec (Vec2 x y) = vertex3f (realToFrac x) (realToFrac y) 0
 
-drawRect :: Float -> Float -> Vec2f -> IO ()
-drawRect w h pos = renderPrimitive Quads vecs
+drawRect :: Rect -> IO ()
+drawRect (Rect pos (Vec2 w h)) = renderPrimitive Quads vecs
     where vecs = mapM_ vertexVec corners
           offsets = [ (w, h)
                     , (-w, h)
@@ -30,5 +29,6 @@ drawRect w h pos = renderPrimitive Quads vecs
           vecOffsets = map vec2 offsets
           corners = map (+ pos) vecOffsets
 
-drawSquare :: Float -> Vec2f -> IO ()
-drawSquare size = drawRect size size
+drawColorRect color rect = do
+    colorRGB color
+    drawRect rect

@@ -23,3 +23,4 @@ unitVec t = Vec2 (cos t) (sin t)
 s .* v = fmap (* s) v
 v *. s = fmap (* s) v
 
+data Rect = Rect Vec2f Vec2f
