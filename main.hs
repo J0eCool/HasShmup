@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 import Control.Lens
 import Data.IORef
@@ -28,12 +27,6 @@ display worldRef = do
 
     swapBuffers
 
---drawEnt :: (Entity e) => RGB -> e -> IO ()
---drawEnt color ent = do
---    colorRGB color
---    draw ent
-
-
 drawColorRect color (Rect pos (Vec2 w h)) = do
     colorRGB color
     drawRect w h pos
@@ -48,59 +41,72 @@ data Ball = Ball
     }
 
 instance Entity WorldInput Ball where
-    draw ball = drawColorRect (0, 1, 1) (Rect pos (Vec2 0.1 0.1))
-        where pos = ballPos ball
+    entityType _ = BallType
 
     update (_, world) ball = ball { ballPos = pos, ballRemTime = time }
         where pos = (ballDist ball) .* unitVec ang
               ang = world ^. timeSinceStart + ballOffset ball
               time = ballRemTime ball - world ^. deltaTime
 
+    draw ball = drawColorRect (0, 1, 1) (Rect pos (Vec2 0.1 0.1))
+        where pos = ballPos ball
+
     shouldRemove _ ball = ballRemTime ball <= 0
 
-newBall :: Float -> Float -> Float -> Ball
-newBall dist offset remTime = Ball offset dist remTime (Vec2 0 0)
+newBall :: Float -> Float -> Float -> WorldEntity
+newBall dist offset remTime = EBox $ Ball offset dist remTime (Vec2 0 0)
 
-isBall :: EntityBox WorldInput -> Bool
-isBall (EBox (Ball _ _ _ _)) = True
-isBall _ = False
-
---newBall :: Vec2f -> Float -> Float -> Float -> WorldEntity
---newBall pos dist offset remTime = newEntity pos size
---    & update .~ updateBall dist offset
---    & draw .~ drawEnt color
---    & shouldRemove .~ (\(_, world) _ -> world ^. timeSinceStart > remTime)
---    where size = Vec2 0.1 0.1
---          color = (0, 1, 1)
-
---updateBall :: Float -> Float -> WorldInput -> WorldEntity -> WorldEntity
---updateBall dist offset (_, world) = pos .~ newPos
---    where newPos = dist .*/ unitVec ang
---          ang = world ^. timeSinceStart + offset
+isBall :: (Entity i e) => e -> Bool
+isBall = isOfType BallType
 
 ----------------------------------------
 
---newPlayer :: Vec2f -> WorldEntity
---newPlayer pos = newEntity pos size
---    & update .~ updatePlayer 1
---    & draw .~ drawEnt color
---    & entsToSpawn .~ spawnFromPlayer
---    where size = Vec2 0.2 0.25
---          color = (1, 0, 0)
+data Player = Player
+    { playerPos :: Vec2f
+    }
 
---updatePlayer :: Float -> WorldInput -> WorldEntity -> WorldEntity
---updatePlayer speed (input, world) = pos %~ (+ delta)
---    where dT = world ^. deltaTime
---          dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
---          delta = (speed * dT) .*/ dir
+instance Entity WorldInput Player where
+    entityType _ = PlayerType
 
---spawnFromPlayer :: WorldInput -> WorldEntity -> [WorldEntity]
---spawnFromPlayer (input, world) player =
---    if isShooting input
---    then [newBullet (player ^. pos) world]
---    else []
+    update (input, world) player = player { playerPos = pos }
+        where pos = playerPos player + delta
+              delta = (speed * dT) .* dir
+              speed = 1
+              dT = world ^. deltaTime
+              dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
+
+    draw player = drawColorRect (1, 0, 0.5) (Rect (playerPos player) (Vec2 0.1 0.15))
+
+    entitiesToSpawn (input, world) player =
+        if isShooting input
+        then [newBullet (playerPos player) world]
+        else []
+
+newPlayer :: Vec2f -> WorldEntity
+newPlayer pos = EBox $ Player pos
 
 ----------------------------------------
+
+data Bullet = Bullet
+    { bulletPos :: Vec2f
+    , bulletDelTime :: Float
+    , bulletDidCollide :: Bool
+    }
+
+instance Entity WorldInput Bullet where
+    entityType _ = BulletType
+
+    update (_, world) bullet = bullet { bulletPos = pos }
+        where pos = (bulletPos bullet) + Vec2 0 4 *. (world ^. deltaTime)
+
+    draw bullet = drawColorRect (1, 1, 0) (Rect (bulletPos bullet) (Vec2 0.04 0.08))
+
+    shouldRemove (_, world) bullet = t > bulletDelTime bullet || bulletDidCollide bullet
+        where t = world ^. timeSinceStart
+
+newBullet :: Vec2f -> World -> WorldEntity
+newBullet p world = EBox $ Bullet p delTime False
+    where delTime = world ^. timeSinceStart + 1.5
 
 --newBullet :: Vec2f -> World -> WorldEntity
 --newBullet p world = newEntity p size
@@ -134,7 +140,7 @@ main = do
     let ents =
             [ newBall 0.8 pi 5
             , newBall 0.8 0 10
-            --, newPlayer (Vec2 0 0)
+            , newPlayer (Vec2 0 0)
             ]
     worldRef <- newIORef (newWorld t ents)
     inputRef <- newIORef newInput

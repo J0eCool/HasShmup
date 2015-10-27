@@ -5,8 +5,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module World (World, WorldInput, newWorld, addEntity,
-    worldUpdate, worldDraw, timeSinceStart, deltaTime) where
+module World (World, WorldInput, WorldEntity, newWorld, addEntity,
+    worldUpdate, worldDraw, timeSinceStart, deltaTime, entities) where
 
 import Control.Lens
 import Control.Monad.State.Lazy
@@ -15,35 +15,22 @@ import Entity
 import PlayerInput
 
 type WorldInput = (PlayerInput, World)
---type WorldEntity = Entity WorldInput
-
-instance Entity WorldInput (EntityBox WorldInput) where
-  update i (EBox e) = EBox (update i e)
-  draw (EBox e) = draw e
-  entitiesToSpawn i (EBox e) = map EBox . entitiesToSpawn i $ e
-  shouldRemove i (EBox e) = shouldRemove i e
+type WorldEntity = EntityBox WorldInput
 
 data World = World
     { _lastTimestamp :: Double
     , _timeSinceStart :: Float
     , _deltaTime :: Float
     , _nextEntityId :: Int
-    , _entities :: [EntityBox WorldInput]
+    , _entities :: [WorldEntity]
     }
 makeLenses ''World
 
---newEntity pos size = EntityImpl 0 pos size update draw entsToSpawn shouldRemove
---    where update _ = id
---          draw _ = return ()
---          entsToSpawn _ _ = []
---          shouldRemove _ _ = False
-
-addEntity :: forall e . (Entity WorldInput e) => e -> World -> World
+addEntity :: WorldEntity -> World -> World
 addEntity ent world = world
     & nextEntityId +~ 1
-    & entities %~ (ent' :)
-    where ent' = EBox ent
-          curId = world ^. nextEntityId
+    & entities %~ (ent :)
+    where curId = world ^. nextEntityId
 
 newWorld t ents = foldr addEntity baseWorld ents
     where baseWorld = World t 0 0 0 []

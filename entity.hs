@@ -2,27 +2,35 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Entity where
 
+data EntityType = PlayerType | BallType | BulletType
+    deriving (Eq)
+
+isOfType :: (Entity i e) => EntityType -> e -> Bool
+isOfType t = (== t) . entityType
+
 class Entity i e | e -> i where
-  update :: i -> e -> e
-  draw :: e -> IO ()
-  entitiesToSpawn ::  i -> e -> [e]
-  shouldRemove :: i -> e -> Bool
+    entityType :: e -> EntityType
+    update :: i -> e -> e
+    draw :: e -> IO ()
+    entitiesToSpawn :: i -> e -> [EntityBox i]
+    shouldRemove :: i -> e -> Bool
 
-  update _ = id
-  draw _ = return ()
-  entitiesToSpawn _ _ = []
-  shouldRemove _ _ = False
+    update _ = id
+    draw _ = return ()
+    entitiesToSpawn _ _ = []
+    shouldRemove _ _ = False
 
-data EntityBox i = forall e . (Entity i e) => EBox e
+data EntityBox i where
+    EBox :: (Entity i e) => e -> EntityBox i
 
---instance Entity Int Char where
---  update 0 c = c
---  update n c = update (n - 1) (succ c)
---instance Show (EntityBox Int) where
---  show (EBox x) = show x
---instance Entity Int (EntityBox Int) where
---  update x (EBox y) = EBox $ update x y
+instance Entity i (EntityBox i) where
+    update i (EBox e) = EBox (update i e)
+    draw (EBox e) = draw e
+    entitiesToSpawn i (EBox e) = map EBox . entitiesToSpawn i $ e
+    shouldRemove i (EBox e) = shouldRemove i e
+    entityType (EBox e) = entityType e
