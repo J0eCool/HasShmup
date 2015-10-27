@@ -1,28 +1,33 @@
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TemplateHaskell #-} 
 
-module Entity where
+module Entity (Entity, newEntity, entId, pos, size,
+  update, draw, entsToSpawn, shouldRemove) where
 
-class Entity i e | e -> i where
-  update :: i -> e -> e
-  draw :: e -> IO ()
-  entitiesToSpawn ::  i -> e -> [e]
-  shouldRemove :: i -> e -> Bool
+import Control.Lens
+import Control.Monad.State.Lazy
 
-  update _ = id
-  draw _ = return ()
-  entitiesToSpawn _ _ = []
-  shouldRemove _ _ = False
+import PlayerInput
+import Vec
 
-data EntityBox i = forall e . (Entity i e) => EBox e
+data Entity i = EntityImpl
+    { _entId :: Int
+    , _pos :: Vec2f
+    , _size :: Vec2f
+    , _update :: i -> Entity i -> Entity i
+    , _draw :: Entity i -> IO ()
+    , _entsToSpawn :: i -> Entity i -> [Entity i]
+    , _shouldRemove :: i -> Entity i -> Bool
+    }
+makeLenses ''Entity
 
---instance Entity Int Char where
---  update 0 c = c
---  update n c = update (n - 1) (succ c)
---instance Show (EntityBox Int) where
---  show (EBox x) = show x
---instance Entity Int (EntityBox Int) where
---  update x (EBox y) = EBox $ update x y
+instance Show (Entity i) where
+  show e = "<Entity_" ++ show (e ^. entId)
+    ++ " Pos=" ++ show (e ^. pos)
+    ++ " Size=" ++ show (e ^. size)
+    ++ ">"
+
+newEntity pos size = EntityImpl 0 pos size update draw entsToSpawn shouldRemove
+    where update _ = id
+          draw _ = return ()
+          entsToSpawn _ _ = []
+          shouldRemove _ _ = False

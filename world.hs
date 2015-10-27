@@ -1,11 +1,6 @@
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TemplateHaskell #-} 
 
-module World (World, WorldInput, newWorld, addEntity,
+module World (World, WorldInput, WorldEntity, newWorld,
     worldUpdate, worldDraw, timeSinceStart, deltaTime) where
 
 import Control.Lens
@@ -15,34 +10,22 @@ import Entity
 import PlayerInput
 
 type WorldInput = (PlayerInput, World)
---type WorldEntity = Entity WorldInput
-
-instance Entity WorldInput (EntityBox WorldInput) where
-  update i (EBox e) = EBox (update i e)
-  draw (EBox e) = draw e
-  entitiesToSpawn i (EBox e) = map EBox . entitiesToSpawn i $ e
-  shouldRemove i (EBox e) = shouldRemove i e
+type WorldEntity = Entity WorldInput
 
 data World = World
     { _lastTimestamp :: Double
     , _timeSinceStart :: Float
     , _deltaTime :: Float
     , _nextEntityId :: Int
-    , _entities :: [EntityBox WorldInput]
+    , _entities :: [WorldEntity]
     }
+    deriving (Show)
 makeLenses ''World
 
---newEntity pos size = EntityImpl 0 pos size update draw entsToSpawn shouldRemove
---    where update _ = id
---          draw _ = return ()
---          entsToSpawn _ _ = []
---          shouldRemove _ _ = False
-
-addEntity :: forall e . (Entity WorldInput e) => e -> World -> World
 addEntity ent world = world
     & nextEntityId +~ 1
     & entities %~ (ent' :)
-    where ent' = EBox ent
+    where ent' = ent & entId .~ curId
           curId = world ^. nextEntityId
 
 newWorld t ents = foldr addEntity baseWorld ents
@@ -62,13 +45,10 @@ worldUpdate input t world = execState worldState world
             deltaTime .= dT
             lastTimestamp .= t
             timeSinceStart += dT
-            entities %= filter (not . shouldRemove entInput)
-                  . (\es -> es ++ concatMap (entitiesToSpawn entInput) es)
-                  . map (update entInput)
-            --entities %= filter (not . inputSelf shouldRemove)
-            --    . (\es -> es ++ concatMap (inputSelf entitiesToSpawn) es)
-            --    . map (inputSelf update)
+            entities %= filter (not . inputSelf shouldRemove)
+                . (\es -> es ++ concatMap (inputSelf entsToSpawn) es)
+                . map (inputSelf update)
 
-worldDraw world = mapM_ draw (world ^. entities)
+worldDraw world = mapM_ (\x -> x ^. draw $ x) (world ^. entities)
 
 
