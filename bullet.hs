@@ -23,10 +23,12 @@ instance Entity WorldInput Bullet where
     update (_, world) bullet = bullet { bulletPos = pos }
         where pos = (bulletPos bullet) + Vec2 0 4 *. (world ^. deltaTime)
 
-    draw bullet = drawColorRect (1, 1, 0) (Rect (bulletPos bullet) (Vec2 0.04 0.08))
-
     shouldRemove (_, world) bullet = t > bulletDelTime bullet || bulletDidCollide bullet
         where t = world ^. timeSinceStart
+
+    boundingRect bullet = Rect (bulletPos bullet) (Vec2 0.04 0.08)
+
+    draw = drawEnt (RGB 1 1 0)
 
 newBullet :: Vec2f -> World -> WorldEntity
 newBullet p world = EBox $ Bullet p delTime False

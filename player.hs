@@ -1,5 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TemplateHaskell #-}
 
 module Player (newPlayer) where
 
@@ -13,32 +12,38 @@ import World
 import Vec
 
 data Player = Player
-    { playerPos :: Vec2f
-    , shotCooldown :: Float
+    { _pos :: Vec2f
+    , _shotCooldown :: Float
     }
+makeLenses ''Player
 
 instance Entity WorldInput Player where
     entityType _ = PlayerType
 
-    update (input, world) player = player { playerPos = pos, shotCooldown = cooldown }
-        where pos = playerPos player + delta
-              delta = (speed * dT) .* dir
+    update (input, world) player = player
+        & pos +~ delta
+        & shotCooldown +~ cooldownDelta
+        where delta = (speed * dT) .* dir
               speed = 1
               dT = world ^. deltaTime
-              cooldown = if shouldShoot player input
+              cooldownDelta = if shouldShoot player input
                 then 0.4
-                else shotCooldown player - dT
+                else (-dT)
               dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
-
-    draw player = drawColorRect (1, 0, 0.5) (Rect (playerPos player) (Vec2 0.1 0.15))
 
     entitiesToSpawn (input, world) player =
         if shouldShoot player input
-        then [newBullet (playerPos player) world]
+        then [newBullet (player ^. pos) world]
         else []
 
+    boundingRect player = Rect (player ^. pos) (Vec2 0.1 0.15)
+
+    draw = drawEnt (RGB 1 0 0.5)
+
+
+shouldShoot :: Player -> PlayerInput -> Bool
 shouldShoot player input = cooldownElapsed && buttonPressed
-    where cooldownElapsed = shotCooldown player <= 0
+    where cooldownElapsed = player ^. shotCooldown <= 0
           buttonPressed = isShooting input
 
 newPlayer :: Vec2f -> WorldEntity

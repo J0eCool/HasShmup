@@ -24,3 +24,5 @@ s .* v = fmap (* s) v
 v *. s = fmap (* s) v
 
 data Rect = Rect Vec2f Vec2f
+
+rect x y w h = Rect (Vec2 x y) (Vec2 w h)

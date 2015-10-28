@@ -26,10 +26,11 @@ instance Entity WorldInput Ball where
               ang = world ^. timeSinceStart + ballOffset ball
               time = ballRemTime ball - world ^. deltaTime
 
-    draw ball = drawColorRect (0, 1, 1) (Rect pos (Vec2 0.1 0.1))
-        where pos = ballPos ball
-
     shouldRemove _ ball = ballRemTime ball <= 0
+
+    boundingRect ball = Rect (ballPos ball) (Vec2 0.1 0.1)
+
+    draw = drawEnt (RGB 0 1 1)
 
 newBall :: Float -> Float -> Float -> WorldEntity
 newBall dist offset remTime = EBox $ Ball offset dist remTime (Vec2 0 0)
