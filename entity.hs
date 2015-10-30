@@ -10,7 +10,7 @@ module Entity where
 import Vec
 
 data EntityType = PlayerType | BallType | BulletType
-    deriving (Eq)
+    deriving (Eq, Show)
 
 class Entity i e | e -> i where
     entityType :: e -> EntityType
@@ -28,8 +28,11 @@ class Entity i e | e -> i where
     updateMulti input ent = this ++ spawned
       where this = if shouldRemove input ent
                    then []
-                   else [EBox $ update input ent]
+                   else [eBox $ update input ent]
             spawned = entitiesToSpawn input ent
+
+    handleCollisions :: [EntityBox i] -> e -> e
+    handleCollisions _ = id
 
     boundingRect :: e -> Rect
     boundingRect _ = rect 0 0 0 0
@@ -38,14 +41,30 @@ class Entity i e | e -> i where
     draw _ = return ()
 
 data EntityBox i where
-    EBox :: (Entity i e) => e -> EntityBox i
+    EBox :: (Entity i e) => Int -> e -> EntityBox i
 
 instance Entity i (EntityBox i) where
-    entityType (EBox e) = entityType e
-    update i (EBox e) = EBox (update i e)
-    draw (EBox e) = draw e
-    entitiesToSpawn i (EBox e) = map EBox . entitiesToSpawn i $ e
-    shouldRemove i (EBox e) = shouldRemove i e
+    entityType (EBox _ e) = entityType e
+    update i (EBox x e) = EBox x (update i e)
+    entitiesToSpawn i (EBox _ e) = map (EBox 0) . entitiesToSpawn i $ e
+    shouldRemove i (EBox _ e) = shouldRemove i e
+    updateMulti i (EBox x e) = this ++ spawned
+      where this = if shouldRemove i e
+                   then []
+                   else [EBox x $ update i e]
+            spawned = entitiesToSpawn i e
+    boundingRect (EBox _ e) = boundingRect e
+    draw (EBox _ e) = draw e
+
+eBox ent = EBox 0 ent
+setEntId x (EBox _ e) = EBox x e
+getEntId (EBox x _) = x
+
+instance Eq (EntityBox i) where
+    (EBox x _) == (EBox y _) = x == y
+
+instance Show (EntityBox i) where
+    show (EBox x e) = show (entityType e) ++ "_" ++ show x
 
 ---------------------------------------
 

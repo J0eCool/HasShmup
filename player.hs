@@ -20,7 +20,7 @@ makeLenses ''Player
 instance Entity WorldInput Player where
     entityType _ = PlayerType
 
-    update (input, world) player = player
+    update (WInput input world _) player = player
         & pos +~ delta
         & shotCooldown +~ cooldownDelta
         where delta = (speed * dT) .* dir
@@ -31,7 +31,7 @@ instance Entity WorldInput Player where
                 else (-dT)
               dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
 
-    entitiesToSpawn (input, world) player =
+    entitiesToSpawn (WInput input world _) player =
         if shouldShoot player input
         then [newBullet (player ^. pos) world]
         else []
@@ -47,4 +47,4 @@ shouldShoot player input = cooldownElapsed && buttonPressed
           buttonPressed = isShooting input
 
 newPlayer :: Vec2f -> WorldEntity
-newPlayer pos = EBox $ Player pos 0
+newPlayer pos = eBox $ Player pos 0

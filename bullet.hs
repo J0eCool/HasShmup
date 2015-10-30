@@ -14,22 +14,22 @@ import Vec
 data Bullet = Bullet
     { bulletPos :: Vec2f
     , bulletDelTime :: Float
-    , bulletDidCollide :: Bool
     }
 
 instance Entity WorldInput Bullet where
     entityType _ = BulletType
 
-    update (_, world) bullet = bullet { bulletPos = pos }
+    update (WInput _ world _) bullet = bullet { bulletPos = pos }
         where pos = (bulletPos bullet) + Vec2 0 4 *. (world ^. deltaTime)
 
-    shouldRemove (_, world) bullet = t > bulletDelTime bullet || bulletDidCollide bullet
+    shouldRemove (WInput _ world collisions) bullet = t > bulletDelTime bullet || didCollide
         where t = world ^. timeSinceStart
+              didCollide = any isBall collisions
 
     boundingRect bullet = Rect (bulletPos bullet) (Vec2 0.04 0.08)
 
     draw = drawEnt (RGB 1 1 0)
 
 newBullet :: Vec2f -> World -> WorldEntity
-newBullet p world = EBox $ Bullet p delTime False
+newBullet p world = eBox $ Bullet p delTime
     where delTime = world ^. timeSinceStart + 1.5
