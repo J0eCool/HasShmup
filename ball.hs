@@ -1,7 +1,6 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TemplateHaskell #-}
 
-module Ball where
+module Ball (newBall) where
 
 import Control.Lens
 
@@ -12,25 +11,25 @@ import World
 import Vec
 
 data Ball = Ball
-    { ballOffset :: Float
-    , ballDist :: Float
-    , ballRemTime :: Float
-    , ballPos :: Vec2f
+    { _pos :: Vec2f
+    , _vel :: Vec2f
     }
+makeLenses ''Ball
 
 instance Entity WorldInput Ball where
     entityType _ = BallType
 
-    update (WInput _ world collisions) ball = ball { ballPos = pos, ballRemTime = time }
-        where pos = (ballDist ball) .* unitVec ang
-              ang = world ^. timeSinceStart + ballOffset ball
-              time = ballRemTime ball - world ^. deltaTime
+    update (WInput _ world _) ball = ball
+        & pos +~ delta
+        where delta = v *. dT
+              v = ball ^. vel
+              dT = world ^. deltaTime
 
     shouldRemove (WInput _ _ collisions) ball = any isBullet collisions
 
-    boundingRect ball = Rect (ballPos ball) (Vec2 0.1 0.1)
+    boundingRect ball = Rect (ball ^. pos) (Vec2 0.1 0.1)
 
     draw = drawEnt (RGB 0 1 1)
 
-newBall :: Float -> Float -> Float -> WorldEntity
-newBall dist offset remTime = eBox $ Ball offset dist remTime (Vec2 0 0)
+newBall :: Vec2f -> WorldEntity
+newBall startPos = eBox $ Ball startPos (Vec2 0 0)

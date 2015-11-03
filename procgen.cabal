@@ -1,0 +1,24 @@
+name:                procgen
+version:             0.0.1.0
+build-type:          Simple
+cabal-version:       >=1.2
+
+executable procgen
+  main-is:             main.hs
+  other-modules:       Ball
+                     , Bullet
+                     , Draw
+                     , Entity
+                     , Player
+                     , PlayerInput
+                     , Vec
+                     , World
+  hs-source-dirs:      .
+  build-depends:       base
+                     , GLUT
+                     , lens
+                     , mtl
+                     , OpenGL
+                     , time
+  default-language:    Haskell2010
+  ghc-options:         -Wall -O2

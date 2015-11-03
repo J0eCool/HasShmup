@@ -13,6 +13,7 @@ import Vec
 
 data Player = Player
     { _pos :: Vec2f
+    , _shotBurstEnd :: Float
     , _shotCooldown :: Float
     }
 makeLenses ''Player
@@ -21,18 +22,21 @@ instance Entity WorldInput Player where
     entityType _ = PlayerType
 
     update (WInput input world _) player = player
-        & pos +~ delta
-        & shotCooldown +~ cooldownDelta
-        where delta = (speed * dT) .* dir
+        & pos +~ deltaPos
+        & shotBurstEnd %~ (if isShooting input
+                           then const (t + burstTime)
+                           else id)
+        & shotCooldown %~ (if shouldShoot player world
+                           then const timePerShot
+                           else max 0 . (flip (-)) dT)
+        where deltaPos = (speed * dT) .* dir
               speed = 1
-              dT = world ^. deltaTime
-              cooldownDelta = if shouldShoot player input
-                then 0.4
-                else (-dT)
               dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
+              dT = world ^. deltaTime
+              t = world ^. timeSinceStart
 
     entitiesToSpawn (WInput input world _) player =
-        if shouldShoot player input
+        if shouldShoot player world
         then [newBullet (player ^. pos) world]
         else []
 
@@ -40,11 +44,14 @@ instance Entity WorldInput Player where
 
     draw = drawEnt (RGB 1 0 0.5)
 
+shotsPerBurst = 3
+burstTime = 0.3
+timePerShot = burstTime / shotsPerBurst
 
-shouldShoot :: Player -> PlayerInput -> Bool
-shouldShoot player input = cooldownElapsed && buttonPressed
+shouldShoot :: Player -> World -> Bool
+shouldShoot player world = cooldownElapsed && buttonPressed
     where cooldownElapsed = player ^. shotCooldown <= 0
-          buttonPressed = isShooting input
+          buttonPressed = player ^. shotBurstEnd >= world ^. timeSinceStart
 
 newPlayer :: Vec2f -> WorldEntity
-newPlayer pos = eBox $ Player pos 0
+newPlayer pos = eBox $ Player pos 0 0

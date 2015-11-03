@@ -1,14 +1,10 @@
-import Control.Lens
 import Data.IORef
-import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import Graphics.Rendering.OpenGL
 import Graphics.UI.GLUT
 import System.Exit
 
 import Ball
-import Draw
-import Entity
 import Player
 import PlayerInput
 import Vec
@@ -22,8 +18,8 @@ main = do
     
     t <- realToFrac <$> getPOSIXTime
     let ents =
-            [ newBall 0.8 pi 5
-            , newBall 0.8 0 10
+            [ newBall (Vec2 0.5 0.5)
+            , newBall (Vec2 (-0.5) 0.5)
             , newPlayer (Vec2 0 0)
             ]
     worldRef <- newIORef (newWorld t ents)

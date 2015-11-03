@@ -38,7 +38,7 @@ yDir :: PlayerInput -> Int
 yDir = axis up down
 
 isShooting :: PlayerInput -> Bool
-isShooting input = signal (input ^. shoot) > 0
+isShooting input = input ^. shoot == Pressed
 
 shouldQuit :: PlayerInput -> Bool
 shouldQuit input = input ^. quit /= None

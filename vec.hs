@@ -20,8 +20,13 @@ vec2 (x, y) = Vec2 x y
 
 unitVec t = Vec2 (cos t) (sin t)
 
+magnitude2 (Vec2 x y) = x^2 + y^2
+magnitude = sqrt . magnitude2
+normalize v = v /. magnitude v
+
 s .* v = fmap (* s) v
 v *. s = fmap (* s) v
+v /. s = fmap (/ s) v
 
 data Rect = Rect Vec2f Vec2f
     deriving (Eq, Show)
