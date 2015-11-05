@@ -1,81 +1,59 @@
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE FlexibleInstances #-}
-
 module Entity where
 
+import Draw
 import Vec
 
-data EntityType = PlayerType | BallType | BulletType
+data EntityType = NoType | PlayerType | BallType | BulletType
     deriving (Eq, Show)
 
-class Entity i e | e -> i where
-    entityType :: e -> EntityType
+type Identifier = Int
 
-    update :: i -> e -> e
-    update _ = id
+data Entity i = Entity
+    { entityId :: Identifier
+    , entityType :: EntityType
+    , update :: i -> Entity i
+    , entitiesToSpawn :: i -> [Entity i]
+    , shouldRemove :: Bool
+    , boundingRect :: Rect
+    , draw :: IO ()
+    }
 
-    entitiesToSpawn :: i -> e -> [EntityBox i]
-    entitiesToSpawn _ _ = []
+instance Eq (Entity i) where
+    a == b = (entityId a) == (entityId b)
 
-    shouldRemove :: i -> e -> Bool
-    shouldRemove _ _ = False
+instance Show (Entity i) where
+    show e = show (entityType e) ++ "_" ++ show (entityId e)
 
-    updateMulti :: i -> e -> [EntityBox i]
-    updateMulti input ent = this ++ spawned
-      where this = if shouldRemove input ent
-                   then []
-                   else [eBox $ update input ent]
-            spawned = entitiesToSpawn input ent
+newEntity t = ent
+    where ent = Entity 0 t update' entitiesToSpawn' shouldRemove' boundingRect' draw'
+          update' _ = ent
+          entitiesToSpawn' _ = []
+          shouldRemove' = False
+          boundingRect' = rect 0 0 0 0
+          draw' = drawEnt (RGB 1 1 1) ent
 
-    handleCollisions :: [EntityBox i] -> e -> e
-    handleCollisions _ = id
+setEntId n ent = ent { entityId = n }
 
-    boundingRect :: e -> Rect
-    boundingRect _ = rect 0 0 0 0
+updateMulti :: Entity i -> i -> [Entity i]
+updateMulti ent input = this ++ spawned
+  where this = if shouldRemove ent
+               then []
+               else [update ent input]
+        spawned = entitiesToSpawn ent input
 
-    draw :: e -> IO ()
-    draw _ = return ()
-
-data EntityBox i where
-    EBox :: (Entity i e) => Int -> e -> EntityBox i
-
-instance Entity i (EntityBox i) where
-    entityType (EBox _ e) = entityType e
-    update i (EBox x e) = EBox x (update i e)
-    entitiesToSpawn i (EBox _ e) = map (EBox 0) . entitiesToSpawn i $ e
-    shouldRemove i (EBox _ e) = shouldRemove i e
-    updateMulti i (EBox x e) = this ++ spawned
-      where this = if shouldRemove i e
-                   then []
-                   else [EBox x $ update i e]
-            spawned = entitiesToSpawn i e
-    boundingRect (EBox _ e) = boundingRect e
-    draw (EBox _ e) = draw e
-
-eBox ent = EBox 0 ent
-setEntId x (EBox _ e) = EBox x e
-getEntId (EBox x _) = x
-
-instance Eq (EntityBox i) where
-    (EBox x _) == (EBox y _) = x == y
-
-instance Show (EntityBox i) where
-    show (EBox x e) = show (entityType e) ++ "_" ++ show x
+drawEnt :: RGB -> Entity i -> IO ()
+drawEnt color ent = drawColorRect color (boundingRect ent)
 
 ---------------------------------------
 
-isOfType :: (Entity i e) => EntityType -> e -> Bool
+isOfType :: EntityType -> Entity i -> Bool
 isOfType t = (== t) . entityType
 
-isBall :: (Entity i e) => e -> Bool
+isBall :: Entity i -> Bool
 isBall = isOfType BallType
 
-isBullet :: (Entity i e) => e -> Bool
+isBullet :: Entity i -> Bool
 isBullet = isOfType BulletType
 
-isPlayer :: (Entity i e) => e -> Bool
+isPlayer :: Entity i -> Bool
 isPlayer = isOfType PlayerType

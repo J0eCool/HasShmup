@@ -2,7 +2,6 @@ module Draw where
 
 import Graphics.Rendering.OpenGL hiding (Rect, RGB)
 
-import Entity
 import Vec
 
 data RGB = RGB Float Float Float
@@ -34,6 +33,3 @@ drawColorRect :: RGB -> Rect -> IO ()
 drawColorRect color rect = do
     colorRGB color
     drawRect rect
-
-drawEnt :: Entity i e => RGB -> e -> IO ()
-drawEnt color ent = drawColorRect color (boundingRect ent)

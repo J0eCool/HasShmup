@@ -4,11 +4,13 @@ import Graphics.Rendering.OpenGL
 import Graphics.UI.GLUT
 import System.Exit
 
-import Ball
-import Player
 import PlayerInput
 import Vec
 import World
+
+import Bullet
+-- import Ball
+-- import Player
 
 main :: IO ()
 main = do
@@ -18,9 +20,11 @@ main = do
     
     t <- realToFrac <$> getPOSIXTime
     let ents =
-            [ newBall (Vec2 0.5 0.5)
-            , newBall (Vec2 (-0.5) 0.5)
-            , newPlayer (Vec2 0 0)
+            [ newBullet (Vec2 0 (-0.5))
+            , newBulletSpawner (Vec2 0 (-0.5))
+            -- [ newBall (Vec2 0.5 0.5)
+            -- , newBall (Vec2 (-0.5) 0.5)
+            -- , newPlayer (Vec2 0 0)
             ]
     worldRef <- newIORef (newWorld t ents)
     inputRef <- newIORef newInput

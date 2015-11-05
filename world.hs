@@ -5,7 +5,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module World (World, WorldEntity, WorldInput(..), newWorld, addEntity,
+module World (World, WorldEntity, WorldInput(..), newWorld, nullInput, addEntity,
     worldUpdate, worldDraw, timeSinceStart, deltaTime, entities, entsCollide) where
 
 import Control.Lens
@@ -16,7 +16,7 @@ import Entity
 import PlayerInput
 import Vec
 
-type WorldEntity = EntityBox WorldInput
+type WorldEntity = Entity WorldInput
 data WorldInput = WInput
     { playerInput :: PlayerInput
     , worldInput :: World
@@ -27,7 +27,7 @@ data World = World
     { _lastTimestamp :: Double
     , _timeSinceStart :: Float
     , _deltaTime :: Float
-    , _nextEntityId :: Int
+    , _nextEntityId :: Identifier
     , _entities :: [WorldEntity]
     }
 makeLenses ''World
@@ -43,12 +43,14 @@ newWorld :: Double -> [WorldEntity] -> World
 newWorld t ents = foldr addEntity baseWorld ents
     where baseWorld = World t 0 0 0 []
 
+nullInput = WInput newInput (newWorld 0 []) []
+
 worldUpdate :: PlayerInput -> Double -> World -> World
 worldUpdate input t world = updateNewEnts $ world
     & timeSinceStart +~ dT
     & deltaTime .~ dT
     & lastTimestamp .~ t
-    & entities %~ concatMap (\e -> updateMulti (entInputFunc e) e)
+    & entities %~ concatMap (\e -> updateMulti e (entInputFunc e))
     where dT = realToFrac $ t - oldT
           oldT = world ^. lastTimestamp
           ents = world ^. entities
@@ -61,7 +63,7 @@ updateNewEnts world = world
     & nextEntityId +~ length missingIdEnts
     where newEnts = zipWith setEntId newIds missingIdEnts
           newIds = [curId..]
-          (missingIdEnts, doneEnts) = partition ((== 0) . getEntId) (world ^. entities)
+          (missingIdEnts, doneEnts) = partition ((== 0) . entityId) (world ^. entities)
           curId = world ^. nextEntityId
 
 findCollisions :: [WorldEntity] -> WorldEntity -> [WorldEntity]
