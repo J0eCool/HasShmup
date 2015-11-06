@@ -12,7 +12,7 @@ data Entity i = Entity
     { entityId :: Identifier
     , entityType :: EntityType
     , update :: i -> Entity i
-    , entitiesToSpawn :: i -> [Entity i]
+    , entitiesToSpawn :: [Entity i]
     , shouldRemove :: Bool
     , boundingRect :: Rect
     , draw :: IO ()
@@ -27,7 +27,7 @@ instance Show (Entity i) where
 newEntity t = ent
     where ent = Entity 0 t update' entitiesToSpawn' shouldRemove' boundingRect' draw'
           update' _ = ent
-          entitiesToSpawn' _ = []
+          entitiesToSpawn' = []
           shouldRemove' = False
           boundingRect' = rect 0 0 0 0
           draw' = drawEnt (RGB 1 1 1) ent
@@ -39,7 +39,7 @@ updateMulti ent input = this ++ spawned
   where this = if shouldRemove ent
                then []
                else [update ent input]
-        spawned = entitiesToSpawn ent input
+        spawned = entitiesToSpawn ent
 
 drawEnt :: RGB -> Entity i -> IO ()
 drawEnt color ent = drawColorRect color (boundingRect ent)

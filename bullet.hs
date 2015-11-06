@@ -1,4 +1,4 @@
-module Bullet (newBullet, newBulletSpawner) where
+module Bullet (newBullet) where
 
 import Control.Lens
 
@@ -7,13 +7,6 @@ import Entity
 import PlayerInput
 import World
 import Vec
-
-newBulletSpawner pos = ent
-    where ent = (newEntity NoType) { update = const ent, entitiesToSpawn = spawn }
-          spawn (WInput input _ _) =
-            if isShooting input
-            then [newBullet pos]
-            else []
 
 newBullet :: Vec2f -> WorldEntity
 newBullet pos = updateBullet pos removeTimer bullet nullInput
