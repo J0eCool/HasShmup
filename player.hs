@@ -9,21 +9,25 @@ import PlayerInput
 import World
 import Vec
 
-shotsPerBurst = 3
-timePerBurst = 0.3
+shotsPerBurst = 2
+timePerBurst = 0.12
 timePerShot = timePerBurst / shotsPerBurst
 
 newPlayer :: Vec2f -> WorldEntity
-newPlayer pos = updatePlayer pos 0 0 (newEntity PlayerType) nullInput
+newPlayer pos = updatePlayer 0 0 player nullInput
+    where player = (newEntity PlayerType)
+                   { pos = pos
+                   , size = Vec2 0.1 0.15
+                   , color = RGB 1 0 0.5
+                   }
 
-updatePlayer pos burstTimer shotTimer player (WInput input world _) = player'
+updatePlayer burstTimer shotTimer player (WInput input world _) = player'
     where player' = player
-                    { update = updatePlayer pos' burstTimer' shotTimer' player'
+                    { update = updatePlayer burstTimer' shotTimer' player'
                     , entitiesToSpawn = toSpawn
-                    , boundingRect = Rect pos' size
-                    , draw = drawEnt color player'
+                    , pos = pos'
                     }
-          pos' = pos + deltaPos
+          pos' = (pos player) + deltaPos
           deltaPos = (speed * dT) .* dir
           dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
           dT = world ^. deltaTime
@@ -34,5 +38,3 @@ updatePlayer pos burstTimer shotTimer player (WInput input world _) = player'
           toSpawn = if shouldShoot then [newBullet pos'] else []
 
           speed = 1
-          size = Vec2 0.1 0.15
-          color = RGB 1 0 0.5

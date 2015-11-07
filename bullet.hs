@@ -17,8 +17,9 @@ updateBullet pos removeTimer bullet (WInput _ world collisions) = bullet'
     where bullet' = bullet
                     { update = updateBullet pos' removeTimer' bullet'
                     , shouldRemove = removeTimer' <= 0 || any isBall collisions
-                    , boundingRect = Rect pos' size
-                    , draw = drawEnt (RGB 1 1 0) bullet'
+                    , pos = pos'
+                    , size = size
+                    , color = RGB 1 1 0
                     }
           pos' = pos + dT .* vel
           removeTimer' = removeTimer - dT

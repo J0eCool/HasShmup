@@ -8,8 +8,10 @@ import PlayerInput
 import Vec
 import World
 
--- import Ball
+import Ball
 import Player
+
+getFracTime = realToFrac <$> getPOSIXTime
 
 main :: IO ()
 main = do
@@ -17,11 +19,11 @@ main = do
     initialDisplayMode $= [WithDepthBuffer, DoubleBuffered]
     win <- createWindow "Hi guyes"
     
-    t <- realToFrac <$> getPOSIXTime
+    t <- getFracTime
     let ents =
             [ newPlayer (Vec2 0 0)
-            -- , newBall (Vec2 0.5 0.5)
-            -- , newBall (Vec2 (-0.5) 0.5)
+            , newBall (Vec2 0.5 0.5)
+            , newBall (Vec2 (-0.5) 0.5)
             ]
     worldRef <- newIORef (newWorld t ents)
     inputRef <- newIORef newInput
@@ -45,7 +47,7 @@ updateWorld :: IORef World -> IORef PlayerInput -> IdleCallback
 updateWorld worldRef inputRef = do
     world <- get worldRef
     input <- get inputRef
-    t <- realToFrac <$> getPOSIXTime
+    t <- getFracTime
     worldRef $~! worldUpdate input t
     inputRef $~! updateInput
 

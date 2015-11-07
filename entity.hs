@@ -14,8 +14,9 @@ data Entity i = Entity
     , update :: i -> Entity i
     , entitiesToSpawn :: [Entity i]
     , shouldRemove :: Bool
-    , boundingRect :: Rect
-    , draw :: IO ()
+    , pos :: Vec2f
+    , size :: Vec2f
+    , color :: RGB
     }
 
 instance Eq (Entity i) where
@@ -25,12 +26,13 @@ instance Show (Entity i) where
     show e = show (entityType e) ++ "_" ++ show (entityId e)
 
 newEntity t = ent
-    where ent = Entity 0 t update' entitiesToSpawn' shouldRemove' boundingRect' draw'
+    where ent = Entity 0 t update' entitiesToSpawn' shouldRemove' pos' size' color'
           update' _ = ent
           entitiesToSpawn' = []
           shouldRemove' = False
-          boundingRect' = rect 0 0 0 0
-          draw' = drawEnt (RGB 1 1 1) ent
+          pos' = Vec2 0 0
+          size' = Vec2 0 0
+          color' = RGB 1 1 1
 
 setEntId n ent = ent { entityId = n }
 
@@ -41,8 +43,8 @@ updateMulti ent input = this ++ spawned
                else [update ent input]
         spawned = entitiesToSpawn ent
 
-drawEnt :: RGB -> Entity i -> IO ()
-drawEnt color ent = drawColorRect color (boundingRect ent)
+boundingRect ent = Rect (pos ent) (size ent)
+draw ent = drawColorRect (color ent) (boundingRect ent)
 
 ---------------------------------------
 

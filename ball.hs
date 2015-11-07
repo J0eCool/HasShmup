@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TemplateHaskell #-}
-
 module Ball (newBall) where
 
 import Control.Lens
@@ -10,26 +8,25 @@ import PlayerInput
 import World
 import Vec
 
-data Ball = Ball
-    { _pos :: Vec2f
-    , _vel :: Vec2f
-    }
-makeLenses ''Ball
-
-instance Entity WorldInput Ball where
-    entityType _ = BallType
-
-    update (WInput _ world _) ball = ball
-        & pos +~ delta
-        where delta = v *. dT
-              v = ball ^. vel
-              dT = world ^. deltaTime
-
-    shouldRemove (WInput _ _ collisions) ball = any isBullet collisions
-
-    boundingRect ball = Rect (ball ^. pos) (Vec2 0.1 0.1)
-
-    draw = drawEnt (RGB 0 1 1)
-
 newBall :: Vec2f -> WorldEntity
-newBall startPos = eBox $ Ball startPos (Vec2 0 0)
+newBall pos = updateBall ball nullInput
+    where ball = (newEntity BallType)
+                 { pos = pos
+                 , size = Vec2 0.1 0.15
+                 , color = RGB 0 1 1
+                 }
+
+updateBall ball (WInput _ world collisions) = ball'
+    where ball' = ball
+                  { update = updateBall ball'
+                  , pos = pos'
+                  , shouldRemove = any isBullet collisions || isOffScreen
+                  }
+          curPos@(Vec2 x y) = pos ball
+          pos' = curPos + deltaPos
+          deltaPos = dT .* Vec2 0 (-speed)
+          dT = world ^. deltaTime
+          isOffScreen = y < (-0.8)
+          speed = 0.15
+
+
