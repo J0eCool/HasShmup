@@ -1,4 +1,8 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Entity where
+
+import Control.Lens
 
 import Draw
 import Vec
@@ -9,21 +13,22 @@ data EntityType = NoType | PlayerType | BallType | BulletType
 type Identifier = Int
 
 data Entity i = Entity
-    { entityId :: Identifier
-    , entityType :: EntityType
-    , update :: i -> Entity i
-    , entitiesToSpawn :: [Entity i]
-    , shouldRemove :: Bool
-    , pos :: Vec2f
-    , size :: Vec2f
-    , color :: RGB
+    { _entityId :: Identifier
+    , _entityType :: EntityType
+    , _update :: i -> Entity i
+    , _entitiesToSpawn :: [Entity i]
+    , _shouldRemove :: Bool
+    , _pos :: Vec2f
+    , _size :: Vec2f
+    , _color :: RGB
     }
+makeLenses ''Entity
 
 instance Eq (Entity i) where
-    a == b = (entityId a) == (entityId b)
+    a == b = (a ^. entityId) == (b ^. entityId)
 
 instance Show (Entity i) where
-    show e = show (entityType e) ++ "_" ++ show (entityId e)
+    show e = show (e ^. entityType) ++ "_" ++ show (e ^. entityId)
 
 newEntity t = ent
     where ent = Entity 0 t update' entitiesToSpawn' shouldRemove' pos' size' color'
@@ -34,22 +39,22 @@ newEntity t = ent
           size' = Vec2 0 0
           color' = RGB 1 1 1
 
-setEntId n ent = ent { entityId = n }
+setEntId n = entityId .~ n
 
 updateMulti :: Entity i -> i -> [Entity i]
 updateMulti ent input = this ++ spawned
-  where this = if shouldRemove ent
+  where this = if ent ^. shouldRemove
                then []
-               else [update ent input]
-        spawned = entitiesToSpawn ent
+               else [ent ^. update $ input]
+        spawned = ent ^. entitiesToSpawn
 
-boundingRect ent = Rect (pos ent) (size ent)
-draw ent = drawColorRect (color ent) (boundingRect ent)
+boundingRect ent = Rect (ent ^. pos) (ent ^. size)
+draw ent = drawColorRect (ent ^. color) (boundingRect ent)
 
 ---------------------------------------
 
 isOfType :: EntityType -> Entity i -> Bool
-isOfType t = (== t) . entityType
+isOfType t = (== t) . (^. entityType)
 
 isBall :: Entity i -> Bool
 isBall = isOfType BallType

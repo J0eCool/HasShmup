@@ -63,7 +63,7 @@ updateNewEnts world = world
     & nextEntityId +~ length missingIdEnts
     where newEnts = zipWith setEntId newIds missingIdEnts
           newIds = [curId..]
-          (missingIdEnts, doneEnts) = partition ((== 0) . entityId) (world ^. entities)
+          (missingIdEnts, doneEnts) = partition ((== 0) . (^. entityId)) (world ^. entities)
           curId = world ^. nextEntityId
 
 findCollisions :: [WorldEntity] -> WorldEntity -> [WorldEntity]
