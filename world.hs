@@ -1,15 +1,9 @@
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module World (World, WorldEntity, WorldInput(..), newWorld, nullInput, addEntity,
     worldUpdate, worldDraw, timeSinceStart, deltaTime, entities, entsCollide) where
 
 import Control.Lens
-import Control.Monad.State.Lazy
 import Data.List
 
 import Entity
@@ -34,7 +28,7 @@ makeLenses ''World
 
 addEntity :: WorldEntity -> World -> World
 addEntity ent world = world
-    & nextEntityId +~ 1
+    & nextEntityId %~ succ
     & entities %~ (ent' :)
     where ent' = setEntId curId ent
           curId = world ^. nextEntityId
@@ -43,6 +37,7 @@ newWorld :: Double -> [WorldEntity] -> World
 newWorld t ents = foldr addEntity baseWorld ents
     where baseWorld = World t 0 0 0 []
 
+nullInput :: WorldInput
 nullInput = WInput newInput (newWorld 0 []) []
 
 worldUpdate :: PlayerInput -> Double -> World -> World

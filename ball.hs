@@ -1,4 +1,4 @@
-module Ball (newBall) where
+module Ball (newBallSpawner) where
 
 import Control.Lens
 
@@ -23,7 +23,22 @@ updateBall ball (WInput _ world collisions) = ball'
           deltaPos = dT .* Vec2 0 (-speed)
           dT = world ^. deltaTime
           (Vec2 x y) = ball ^. pos
-          isOffScreen = y < (-0.8)
-          speed = 0.15
+          isOffScreen = y < (-1.2)
+          speed = 0.65
 
+newBallSpawner :: Vec2f -> WorldEntity
+newBallSpawner p = updateSpawner 0 spawner nullInput
+    where spawner = newEntity NoType & pos .~ p
 
+updateSpawner spawnTime spawner (WInput _ world collisions) = spawner'
+    where spawner' = spawner
+                     & pos . xLens +~ xVel
+                     & update .~ updateSpawner spawnTime' spawner'
+                     & entitiesToSpawn .~ toSpawn
+          t = world ^. timeSinceStart
+          dT = world ^. deltaTime
+          xVel = dT * rate * cos (rate * t)
+          rate = 7
+          shouldSpawn = spawnTime <= 0
+          spawnTime' = if shouldSpawn then 0.5 else spawnTime - dT
+          toSpawn = if shouldSpawn then [newBall $ spawner ^. pos] else []

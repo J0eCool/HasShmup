@@ -22,8 +22,7 @@ main = do
     t <- getFracTime
     let ents =
             [ newPlayer (Vec2 0 0)
-            , newBall (Vec2 0.5 0.5)
-            , newBall (Vec2 (-0.5) 0.5)
+            , newBallSpawner (Vec2 0.0 1.2)
             ]
     worldRef <- newIORef (newWorld t ents)
     inputRef <- newIORef newInput

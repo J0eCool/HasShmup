@@ -1,5 +1,7 @@
 module Vec where 
 
+import Control.Lens
+
 data Vec2 a = Vec2 a a
     deriving (Eq, Show)
 type Vec2f = Vec2 Float
@@ -27,6 +29,16 @@ normalize v = v /. magnitude v
 s .* v = fmap (* s) v
 v *. s = fmap (* s) v
 v /. s = fmap (/ s) v
+
+xLens :: Lens' Vec2f Float
+xLens = lens getX setX
+getX (Vec2 x _) = x
+setX (Vec2 _ y) x = Vec2 x y
+
+yLens :: Lens' Vec2f Float
+yLens = lens getY setY
+getY (Vec2 _ y) = y
+setY (Vec2 x _) y = Vec2 x y
 
 data Rect = Rect Vec2f Vec2f
     deriving (Eq, Show)
