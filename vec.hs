@@ -30,6 +30,15 @@ s .* v = fmap (* s) v
 v *. s = fmap (* s) v
 v /. s = fmap (/ s) v
 
+minVec :: (Ord a) => Vec2 a -> Vec2 a -> Vec2 a
+minVec = raiseOp min
+
+maxVec :: (Ord a) => Vec2 a -> Vec2 a -> Vec2 a
+maxVec = raiseOp max
+
+clampVec :: (Ord a) => Vec2 a -> Vec2 a -> Vec2 a -> Vec2 a
+clampVec lo hi = minVec hi . maxVec lo
+
 xLens :: Lens' Vec2f Float
 xLens = lens getX setX
 getX (Vec2 x _) = x

@@ -24,11 +24,12 @@ updatePlayer burstTimer shotTimer player (WInput input world _) = player'
     where player' = player
                     & update .~ updatePlayer burstTimer' shotTimer' player'
                     & entitiesToSpawn .~ toSpawn
-                    & pos +~ deltaPos
+                    & pos %~ clampPos . (+ deltaPos)
           deltaPos = (speed * dT) .* dir
           dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
           dT = world ^. deltaTime
           curPos = player ^. pos
+          clampPos = clampVec (Vec2 (-0.95) (-0.875)) (Vec2 0.95 0.15)
 
           shouldShoot = burstTimer > 0 && shotTimer <= 0
           burstTimer' = if isShooting input then timePerBurst else burstTimer - dT
