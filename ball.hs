@@ -9,15 +9,15 @@ import World
 import Vec
 
 newBall :: Vec2f -> WorldEntity
-newBall pos' = updateBall ball nullInput
+newBall pos' = updateBall nullInput ball
     where ball = newEntity BallType
                  & pos .~ pos'
                  & size .~ Vec2 0.1 0.15
+                 & update .~ updateBall
                  & color .~ RGB 0 1 1
 
-updateBall ball (WInput _ world collisions) = ball'
+updateBall (WInput _ world collisions) ball = ball'
     where ball' = ball
-                  & update .~ updateBall ball'
                   & pos +~ deltaPos
                   & shouldRemove .~ (any isBullet collisions || isOffScreen)
           deltaPos = dT .* Vec2 0 (-speed)
@@ -27,13 +27,13 @@ updateBall ball (WInput _ world collisions) = ball'
           speed = 0.65
 
 newBallSpawner :: Vec2f -> WorldEntity
-newBallSpawner p = updateSpawner 0 spawner nullInput
+newBallSpawner p = updateSpawner 0 nullInput spawner
     where spawner = newEntity NoType & pos .~ p
 
-updateSpawner spawnTime spawner (WInput _ world collisions) = spawner'
+updateSpawner spawnTime (WInput _ world collisions) spawner = spawner'
     where spawner' = spawner
                      & pos . xLens +~ xVel
-                     & update .~ updateSpawner spawnTime' spawner'
+                     & update .~ updateSpawner spawnTime'
                      & entitiesToSpawn .~ toSpawn
           t = world ^. timeSinceStart
           dT = world ^. deltaTime

@@ -72,4 +72,4 @@ entsCollide e1 e2 = notSame && hasRect r1 && hasRect r2 && rectsOverlap r1 r2
           r2 = boundingRect e2
 
 worldDraw :: World -> IO ()
-worldDraw world = mapM_ draw (world ^. entities)
+worldDraw world = mapM_ (callOnSelf draw) (world ^. entities)

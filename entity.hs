@@ -15,12 +15,13 @@ type Identifier = Int
 data Entity i = Entity
     { _entityId :: Identifier
     , _entityType :: EntityType
-    , _update :: i -> Entity i
+    , _update :: i -> Entity i -> Entity i
     , _entitiesToSpawn :: [Entity i]
     , _shouldRemove :: Bool
     , _pos :: Vec2f
     , _size :: Vec2f
     , _color :: RGB
+    , _draw :: Entity i -> IO ()
     }
 makeLenses ''Entity
 
@@ -31,13 +32,14 @@ instance Show (Entity i) where
     show e = show (e ^. entityType) ++ "_" ++ show (e ^. entityId)
 
 newEntity t = ent
-    where ent = Entity 0 t update' entitiesToSpawn' shouldRemove' pos' size' color'
-          update' _ = ent
+    where ent = Entity 0 t update' entitiesToSpawn' shouldRemove' pos' size' color' draw'
+          update' _ _ = ent
           entitiesToSpawn' = []
           shouldRemove' = False
           pos' = Vec2 0 0
           size' = Vec2 0 0
           color' = RGB 1 1 1
+          draw' = drawEnt
 
 setEntId n = entityId .~ n
 
@@ -45,11 +47,13 @@ updateMulti :: Entity i -> i -> [Entity i]
 updateMulti ent input = this ++ spawned
   where this = if ent ^. shouldRemove
                then []
-               else [ent ^. update $ input]
+               else [(ent ^. update) input ent]
         spawned = ent ^. entitiesToSpawn
 
 boundingRect ent = Rect (ent ^. pos) (ent ^. size)
-draw ent = drawColorRect (ent ^. color) (boundingRect ent)
+drawEnt ent = drawColorRect (ent ^. color) (boundingRect ent)
+
+callOnSelf l e = (e ^. l) e
 
 ---------------------------------------
 
