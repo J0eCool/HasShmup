@@ -1,7 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module World (World, WorldEntity, WorldInput(..), newWorld, nullInput, addEntity,
-    worldUpdate, worldDraw, timeSinceStart, deltaTime, entities, entsCollide) where
+module World where
 
 import Control.Lens
 import Data.List
@@ -11,12 +10,16 @@ import PlayerInput
 import Rect
 import Vec
 
-type WorldEntity = Entity WorldInput
+import System.Random
+
 data WorldInput = WInput
-    { playerInput :: PlayerInput
-    , worldInput :: World
-    , collisionInput :: [WorldEntity]
+    { _playerInput :: PlayerInput
+    , _worldInput :: World
+    , _collisionInput :: [WorldEntity]
+    , _randInput :: StdGen
     }
+
+type WorldEntity = Entity WorldInput
 
 data World = World
     { _lastTimestamp :: Double
@@ -25,7 +28,9 @@ data World = World
     , _nextEntityId :: Identifier
     , _entities :: [WorldEntity]
     }
+
 makeLenses ''World
+makeLenses ''WorldInput
 
 addEntity :: WorldEntity -> World -> World
 addEntity ent world = world
@@ -39,7 +44,7 @@ newWorld t ents = foldr addEntity baseWorld ents
     where baseWorld = World t 0 0 0 []
 
 nullInput :: WorldInput
-nullInput = WInput newInput (newWorld 0 []) []
+nullInput = WInput newInput (newWorld 0 []) [] (mkStdGen 0)
 
 worldUpdate :: PlayerInput -> Double -> World -> World
 worldUpdate input t world = updateNewEnts $ world
@@ -50,8 +55,10 @@ worldUpdate input t world = updateNewEnts $ world
     where dT = realToFrac $ t - oldT
           oldT = world ^. lastTimestamp
           ents = world ^. entities
-          entInputFunc e = WInput input world collisions
+          entInputFunc e = WInput input world collisions rand
             where collisions = findCollisions ents e
+                  rand = mkStdGen $ e ^. entityId * 47 + milis
+                  milis = floor (t * 1000)
 
 updateNewEnts :: World -> World
 updateNewEnts world = world

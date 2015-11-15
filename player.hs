@@ -45,23 +45,25 @@ newPlayer p = updatePlayer info nullInput player
           info = newInfo health
           health = 3
 
-updatePlayer info (WInput input world collisions) player = player'
+updatePlayer info input player = player'
     where player' = player
                     & update .~ updatePlayer info'
                     & entitiesToSpawn .~ toSpawn
                     & pos %~ clampPos . (+ deltaPos)
                     & draw .~ drawPlayer info'
                     & shouldRemove .~ isDead (info' ^. health)
+
+          pInput = input ^. playerInput
           info' = updateInfo dT damageTaken shootPressed info
           deltaPos = (speed * dT) .* dir
-          dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
-          dT = world ^. deltaTime
+          dir = Vec2 (fromIntegral $ xDir pInput) (negate . fromIntegral $ yDir pInput)
+          dT = input ^. worldInput . deltaTime
           curPos = player ^. pos
-          clampPos = clampVec (Vec2 (-0.95) (-0.875)) (Vec2 0.95 0.15)
+          clampPos = clampVec (Vec2 (-0.95) (-0.925)) (Vec2 0.95 0.15)
 
-          didCollide = any isBall collisions
+          didCollide = any isBall (input ^. collisionInput)
           damageTaken = if didCollide then 1 else 0
-          shootPressed = isShooting input
+          shootPressed = isShooting pInput
 
           toSpawn = if shouldShoot info then [newBullet curPos] else []
 

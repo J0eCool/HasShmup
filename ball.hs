@@ -16,21 +16,21 @@ newBall pos' = updateBall health 0 nullInput ball
     where ball = newEntity BallType
                  & pos .~ pos'
                  & size .~ Vec2 0.1 0.15
-          health = newHealth 5 0
+          health = newHealth 5 0.01
 
-updateBall health gotHitTimer (WInput _ world collisions) ball = ball'
+updateBall health gotHitTimer input ball = ball'
     where ball' = ball
                   & pos +~ deltaPos
                   & update .~ updateBall health' gotHitTimer'
                   & shouldRemove .~ (isDead health || isOffScreen)
                   & color .~ if showHitFlash then RGB 1 0.4 0.4 else RGB 0 1 1
           deltaPos = dT .* Vec2 0 (-speed)
-          dT = world ^. deltaTime
+          dT = input ^. worldInput . deltaTime
           (Vec2 x y) = ball ^. pos
           isOffScreen = y < (-1.2)
           speed = 0.65
 
-          gotHit = any isBullet collisions
+          gotHit = any isBullet (input ^. collisionInput)
           gotHitTimer' = updateTimer gotHit dT 0.05 gotHitTimer
           showHitFlash = gotHitTimer' > 0
           damageTaken = if gotHit then 1 else 0
@@ -40,13 +40,13 @@ newBallSpawner :: Vec2f -> WorldEntity
 newBallSpawner p = updateSpawner 0 nullInput spawner
     where spawner = newEntity NoType & pos .~ p
 
-updateSpawner spawnTime (WInput _ world collisions) spawner = spawner'
+updateSpawner spawnTime input spawner = spawner'
     where spawner' = spawner
                      & pos . xLens +~ xVel
                      & update .~ updateSpawner spawnTime'
                      & entitiesToSpawn .~ toSpawn
-          t = world ^. timeSinceStart
-          dT = world ^. deltaTime
+          t = input ^. worldInput . timeSinceStart
+          dT = input ^. worldInput . deltaTime
           xVel = dT * rate * cos (rate * t)
           rate = 7
           shouldSpawn = spawnTime <= 0

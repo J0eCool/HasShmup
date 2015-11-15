@@ -1,6 +1,5 @@
 module Bullet (newBullet) where
 
-import Control.Category
 import Control.Lens
 
 import Draw
@@ -18,10 +17,10 @@ newBullet pos' = updateBullet removeTimer nullInput bullet
           removeTimer = 1.5
 
 updateBullet :: Float -> WorldInput -> WorldEntity -> WorldEntity
-updateBullet removeTimer (WInput _ world collisions) =
-        update .~ updateBullet removeTimer'
-    >>> shouldRemove .~ (removeTimer' <= 0 || any isBall collisions)
-    >>> pos +~ dT .* vel
+updateBullet removeTimer input bullet = bullet
+    & update .~ updateBullet removeTimer'
+    & shouldRemove .~ (removeTimer' <= 0 || any isBall (input ^. collisionInput))
+    & pos +~ dT .* vel
     where removeTimer' = removeTimer - dT
-          dT = world ^. deltaTime
+          dT = input ^. worldInput . deltaTime
           vel = Vec2 0 4
