@@ -17,8 +17,9 @@ getFracTime = realToFrac <$> getPOSIXTime
 main :: IO ()
 main = do
     (programName, args) <- getArgsAndInitialize
+    initialWindowSize $= Size 800 800
     initialDisplayMode $= [WithDepthBuffer, DoubleBuffered]
-    win <- createWindow "Hi guyes"
+    win <- createWindow "HasShmup"
     
     t <- getFracTime
     let ents =
