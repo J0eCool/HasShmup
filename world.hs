@@ -8,6 +8,7 @@ import Data.List
 
 import Entity
 import PlayerInput
+import Rect
 import Vec
 
 type WorldEntity = Entity WorldInput

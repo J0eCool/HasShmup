@@ -5,6 +5,7 @@ module Entity where
 import Control.Lens
 
 import Draw
+import Rect
 import Vec
 
 data EntityType = NoType | PlayerType | BallType | BulletType

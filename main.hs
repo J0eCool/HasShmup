@@ -11,6 +11,7 @@ import World
 import Ball
 import Player
 
+getFracTime :: IO Double
 getFracTime = realToFrac <$> getPOSIXTime
 
 main :: IO ()

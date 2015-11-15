@@ -3,45 +3,29 @@
 module Player (newPlayer) where
 
 import Control.Lens
+import Control.Monad
 
 import Bullet
 import Draw
 import Entity
+import Health
 import PlayerInput
+import Time
 import World
 import Vec
-
-data Health = Health
-    { _currentHealth :: Int
-    , _maxHealth :: Int
-    , _invincibleTimer :: Float
-    }
-makeLenses ''Health
-
-newHealth health = Health health health 0
-updateHealth dT didCollide health = health
-    & currentHealth -~ (if takeDamage then 1 else 0)
-    & invincibleTimer %~ updateTimer takeDamage dT timeForInvincibility
-    where takeDamage = didCollide && not (isInvincible health)
-
-isInvincible health = health ^. invincibleTimer > 0
-updateTimer shouldReset dT resetTime = if shouldReset
-                                       then const resetTime
-                                       else flip (-) dT
-
-timeForInvincibility = 1.4
 
 data PlayerInfo = PlayerInfo
     { _health :: Health
     , _burstTimer :: Float
     , _shotTimer :: Float
     }
+    deriving (Eq)
 makeLenses ''PlayerInfo
 
-newInfo health = PlayerInfo (newHealth health) 0 0
+newInfo health = PlayerInfo (newHealth health 1.4) 0 0
 
-updateInfo dT didCollide shootPressed info = info
-    & health %~ updateHealth dT didCollide
+updateInfo dT damageTaken shootPressed info = info
+    & health %~ updateHealth dT damageTaken
     & burstTimer %~ updateTimer shootPressed dT timePerBurst
     & shotTimer %~ updateTimer (shouldShoot info) dT timePerShot
 
@@ -67,7 +51,8 @@ updatePlayer info (WInput input world collisions) player = player'
                     & entitiesToSpawn .~ toSpawn
                     & pos %~ clampPos . (+ deltaPos)
                     & draw .~ drawPlayer info'
-          info' = updateInfo dT didCollide shootPressed info
+                    & shouldRemove .~ isDead (info' ^. health)
+          info' = updateInfo dT damageTaken shootPressed info
           deltaPos = (speed * dT) .* dir
           dir = Vec2 (fromIntegral $ xDir input) (negate . fromIntegral $ yDir input)
           dT = world ^. deltaTime
@@ -75,6 +60,7 @@ updatePlayer info (WInput input world collisions) player = player'
           clampPos = clampVec (Vec2 (-0.95) (-0.875)) (Vec2 0.95 0.15)
 
           didCollide = any isBall collisions
+          damageTaken = if didCollide then 1 else 0
           shootPressed = isShooting input
 
           toSpawn = if shouldShoot info then [newBullet curPos] else []
@@ -82,23 +68,6 @@ updatePlayer info (WInput input world collisions) player = player'
           speed = 1
 
 drawPlayer info player = do
-    if shouldDraw then drawEnt player else return ()
+    when (isNotFlashing h) $ drawEnt player
     drawHealthBar 0.5 h
     where h = info ^. health
-          invin = isInvincible h
-          shouldDraw = not invin || isFlashing
-          isFlashing = even $ floor (h ^. invincibleTimer * 20) `mod` 2
-
-clamp lo hi = min hi . max lo
-
-drawHealthBar maxWidth health = do
-    colorRGB $ RGB 0.5 0 0
-    drawTopLeftRect $ rect x y maxWidth height
-    colorRGB $ RGB 1 0 0
-    drawTopLeftRect $ rect x y width height
-    where (x, y) = (-0.9, -0.9)
-          height = 0.1
-          width = pct * maxWidth
-          pct = clamp 0 1 $ f currentHealth / f maxHealth
-          f = fromIntegral . (health ^.)
-
