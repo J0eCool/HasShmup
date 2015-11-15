@@ -44,13 +44,6 @@ newEntity t = ent
 
 setEntId n = entityId .~ n
 
-updateMulti :: Entity i -> i -> [Entity i]
-updateMulti ent input = this ++ spawned
-  where this = if ent ^. shouldRemove
-               then []
-               else [(ent ^. update) input ent]
-        spawned = ent ^. entitiesToSpawn
-
 boundingRect ent = Rect (ent ^. pos) (ent ^. size)
 drawEnt ent = drawColorRect (ent ^. color) (boundingRect ent)
 

@@ -39,35 +39,32 @@ addEntity ent world = world
     where ent' = setEntId curId ent
           curId = world ^. nextEntityId
 
+addEntities :: [WorldEntity] -> World -> World
+addEntities ents world = foldr addEntity world ents
+
 newWorld :: Double -> [WorldEntity] -> World
-newWorld t ents = foldr addEntity baseWorld ents
+newWorld t ents = addEntities ents baseWorld
     where baseWorld = World t 0 0 0 []
 
 nullInput :: WorldInput
 nullInput = WInput newInput (newWorld 0 []) [] (mkStdGen 0)
 
 worldUpdate :: PlayerInput -> Double -> World -> World
-worldUpdate input t world = updateNewEnts $ world
+worldUpdate input t world = (addEntities entsToAdd world)
     & timeSinceStart +~ dT
     & deltaTime .~ dT
     & lastTimestamp .~ t
-    & entities %~ concatMap (\e -> updateMulti e (entInputFunc e))
+    & entities %~ map updateEnt
+    & entities %~ filter (not . (^. shouldRemove))
     where dT = realToFrac $ t - oldT
           oldT = world ^. lastTimestamp
           ents = world ^. entities
-          entInputFunc e = WInput input world collisions rand
+          updateEnt e = (e ^. update) (inputFunc e) e
+          inputFunc e = WInput input world collisions rand
             where collisions = findCollisions ents e
                   rand = mkStdGen $ e ^. entityId * 47 + milis
                   milis = floor (t * 1000)
-
-updateNewEnts :: World -> World
-updateNewEnts world = world
-    & entities .~ newEnts ++ doneEnts
-    & nextEntityId +~ length missingIdEnts
-    where newEnts = zipWith setEntId newIds missingIdEnts
-          newIds = [curId..]
-          (missingIdEnts, doneEnts) = partition ((== 0) . (^. entityId)) (world ^. entities)
-          curId = world ^. nextEntityId
+          entsToAdd = concatMap (^. entitiesToSpawn) (world ^. entities)
 
 findCollisions :: [WorldEntity] -> WorldEntity -> [WorldEntity]
 findCollisions es e = filter (entsCollide e) es
