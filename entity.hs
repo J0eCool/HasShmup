@@ -8,7 +8,11 @@ import Draw
 import Rect
 import Vec
 
-data EntityType = NoType | PlayerType | BallType | BulletType
+data EntityType =
+      NoType
+    | PlayerType
+    | EnemyType
+    | BulletType
     deriving (Eq, Show)
 
 type Identifier = Int
@@ -54,8 +58,8 @@ callOnSelf l e = (e ^. l) e
 isOfType :: EntityType -> Entity i -> Bool
 isOfType t = (== t) . (^. entityType)
 
-isBall :: Entity i -> Bool
-isBall = isOfType BallType
+isEnemy :: Entity i -> Bool
+isEnemy = isOfType EnemyType
 
 isBullet :: Entity i -> Bool
 isBullet = isOfType BulletType

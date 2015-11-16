@@ -19,7 +19,7 @@ newBullet pos' = updateBullet removeTimer nullInput bullet
 updateBullet :: Float -> WorldInput -> WorldEntity -> WorldEntity
 updateBullet removeTimer input bullet = bullet
     & update .~ updateBullet removeTimer'
-    & shouldRemove .~ (removeTimer' <= 0 || any isBall (input ^. collisionInput))
+    & shouldRemove .~ (removeTimer' <= 0 || any isEnemy (input ^. collisionInput))
     & pos +~ dT .* vel
     where removeTimer' = removeTimer - dT
           dT = input ^. worldInput . deltaTime

@@ -61,7 +61,7 @@ updatePlayer info input player = player'
           curPos = player ^. pos
           clampPos = clampVec (Vec2 (-0.95) (-0.925)) (Vec2 0.95 0.15)
 
-          didCollide = any isBall (input ^. collisionInput)
+          didCollide = any isEnemy (input ^. collisionInput)
           damageTaken = if didCollide then 1 else 0
           shootPressed = isShooting pInput
 

@@ -8,7 +8,7 @@ import PlayerInput
 import Vec
 import World
 
-import Ball
+import Enemy
 import Player
 
 getFracTime :: IO Double
@@ -18,13 +18,14 @@ main :: IO ()
 main = do
     (programName, args) <- getArgsAndInitialize
     initialWindowSize $= Size 800 800
+    initialWindowPosition $= Position 200 100
     initialDisplayMode $= [WithDepthBuffer, DoubleBuffered]
     win <- createWindow "HasShmup"
     
     t <- getFracTime
     let ents =
             [ newPlayer (Vec2 0 0)
-            , newBallSpawner (Vec2 0.0 1.2)
+            , newEnemySpawner (Vec2 0.0 1.2)
             ]
     worldRef <- newIORef (newWorld t ents)
     inputRef <- newIORef newInput

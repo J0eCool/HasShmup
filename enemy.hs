@@ -1,4 +1,4 @@
-module Ball (newBallSpawner) where
+module Enemy (newEnemySpawner) where
 
 import Control.Lens
 import Control.Monad
@@ -11,24 +11,24 @@ import Time
 import World
 import Vec
 
-newBall :: Vec2f -> WorldEntity
-newBall pos' = updateBall health 0 nullInput ball
-    where ball = newEntity BallType
+newEnemy :: Vec2f -> WorldEntity
+newEnemy pos' = updateEnemy health 0 nullInput enemy
+    where enemy = newEntity EnemyType
                  & pos .~ pos'
                  & size .~ Vec2 0.1 0.15
           health = newHealth 5 0.01
 
-updateBall health gotHitTimer input ball = ball'
-    where ball' = ball
+updateEnemy health gotHitTimer input enemy = enemy'
+    where enemy' = enemy
                   & pos +~ deltaPos
-                  & update .~ updateBall health' gotHitTimer'
+                  & update .~ updateEnemy health' gotHitTimer'
                   & shouldRemove .~ (isDead health || isOffScreen)
                   & color .~ if showHitFlash then RGB 1 0.4 0.4 else RGB 0 1 1
           deltaPos = dT .* Vec2 0 (-speed)
           dT = input ^. worldInput . deltaTime
-          (Vec2 x y) = ball ^. pos
+          (Vec2 x y) = enemy ^. pos
           isOffScreen = y < (-1.2)
-          speed = 0.65
+          speed = 0.35
 
           gotHit = any isBullet (input ^. collisionInput)
           gotHitTimer' = updateTimer gotHit dT 0.05 gotHitTimer
@@ -36,8 +36,8 @@ updateBall health gotHitTimer input ball = ball'
           damageTaken = if gotHit then 1 else 0
           health' = updateHealth dT damageTaken health
 
-newBallSpawner :: Vec2f -> WorldEntity
-newBallSpawner p = updateSpawner 0 nullInput spawner
+newEnemySpawner :: Vec2f -> WorldEntity
+newEnemySpawner p = updateSpawner 0 nullInput spawner
     where spawner = newEntity NoType & pos .~ p
 
 updateSpawner spawnTime input spawner = spawner'
@@ -51,4 +51,4 @@ updateSpawner spawnTime input spawner = spawner'
           rate = 7
           shouldSpawn = spawnTime <= 0
           spawnTime' = updateTimer shouldSpawn dT 0.5 spawnTime
-          toSpawn = if shouldSpawn then [newBall $ spawner ^. pos] else []
+          toSpawn = if shouldSpawn then [newEnemy $ spawner ^. pos] else []
