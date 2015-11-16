@@ -14,6 +14,7 @@ executable HasShmup
                      , World
   hs-source-dirs:      .
   build-depends:       base
+                     , containers
                      , GLUT
                      , lens
                      , mtl

@@ -3,7 +3,9 @@
 module World where
 
 import Control.Lens
+import Data.Maybe
 import Data.List
+import qualified Data.Map as Map
 
 import Entity
 import PlayerInput
@@ -15,7 +17,7 @@ import System.Random
 data WorldInput = WInput
     { _playerInput :: PlayerInput
     , _worldInput :: World
-    , _collisionInput :: [WorldEntity]
+    , _messageInput :: [EntityMessage]
     , _randInput :: StdGen
     }
 
@@ -27,6 +29,7 @@ data World = World
     , _deltaTime :: Float
     , _nextEntityId :: Identifier
     , _entities :: [WorldEntity]
+    , _lastFrameMessages :: Map.Map WorldEntity [EntityMessage]
     }
 
 makeLenses ''World
@@ -44,37 +47,48 @@ addEntities ents world = foldr addEntity world ents
 
 newWorld :: Double -> [WorldEntity] -> World
 newWorld t ents = addEntities ents baseWorld
-    where baseWorld = World t 0 0 0 []
+    where baseWorld = World t 0 0 0 [] Map.empty
 
 nullInput :: WorldInput
 nullInput = WInput newInput (newWorld 0 []) [] (mkStdGen 0)
 
 worldUpdate :: PlayerInput -> Double -> World -> World
-worldUpdate input t world = (addEntities entsToAdd world)
+worldUpdate input t =
+      worldRemoveEntities
+    . worldAddEntities
+    . worldUpdateMessages
+    . worldUpdateEntities input
+    . worldUpdateTime t
+
+worldUpdateTime t world = world
     & timeSinceStart +~ dT
     & deltaTime .~ dT
     & lastTimestamp .~ t
-    & entities %~ map updateEnt
-    & entities %~ filter (not . (^. shouldRemove))
     where dT = realToFrac $ t - oldT
           oldT = world ^. lastTimestamp
-          ents = world ^. entities
+
+worldUpdateEntities input world = world
+    & entities %~ map updateEnt
+    where ents = world ^. entities
           updateEnt e = (e ^. update) (inputFunc e) e
-          inputFunc e = WInput input world collisions rand
-            where collisions = findCollisions ents e
-                  rand = mkStdGen $ e ^. entityId * 47 + milis
+          inputFunc e = WInput input world msgs rand
+            where rand = mkStdGen $ e ^. entityId * 47 + milis
                   milis = floor (t * 1000)
-          entsToAdd = concatMap (^. entitiesToSpawn) (world ^. entities)
+                  t = world ^. timeSinceStart
+                  msgs = fromMaybe [] (Map.lookup e (world ^. lastFrameMessages))
 
-findCollisions :: [WorldEntity] -> WorldEntity -> [WorldEntity]
-findCollisions es e = filter (entsCollide e) es
+worldUpdateMessages world = world
+    & lastFrameMessages .~ messageMap
+    where messages = concatMap (^. messagesToSend) (world ^. entities)
+          addMessage m (MessageSend e msg) = Map.insertWith (++) e [msg] m 
+          messageMap = foldl addMessage Map.empty messages
 
-entsCollide :: WorldEntity -> WorldEntity -> Bool
-entsCollide e1 e2 = notSame && hasRect r1 && hasRect r2 && rectsOverlap r1 r2
-    where notSame = e1 /= e2
-          hasRect (Rect _ (Vec2 w h)) = w > 0 && h > 0
-          r1 = boundingRect e1
-          r2 = boundingRect e2
+worldRemoveEntities world = world
+    & entities %~ filter (not . (^. shouldRemove))
+
+worldAddEntities world = addEntities entsToAdd world
+    where entsToAdd = concatMap (^. entitiesToSpawn) (world ^. entities)
+
 
 worldDraw :: World -> IO ()
 worldDraw world = mapM_ (callOnSelf draw) (world ^. entities)

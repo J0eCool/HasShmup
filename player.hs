@@ -61,8 +61,8 @@ updatePlayer info input player = player'
           curPos = player ^. pos
           clampPos = clampVec (Vec2 (-0.95) (-0.925)) (Vec2 0.95 0.15)
 
-          didCollide = any isEnemy (input ^. collisionInput)
-          damageTaken = if didCollide then 1 else 0
+          didCollide = damageTaken > 0
+          damageTaken = messageDamageTotal (input ^. messageInput)
           shootPressed = isShooting pInput
 
           toSpawn = if shouldShoot info then [newBullet curPos] else []

@@ -23,18 +23,22 @@ updateEnemy health gotHitTimer input enemy = enemy'
                   & pos +~ deltaPos
                   & update .~ updateEnemy health' gotHitTimer'
                   & shouldRemove .~ (isDead health || isOffScreen)
-                  & color .~ if showHitFlash then RGB 1 0.4 0.4 else RGB 0 1 1
+                  & color .~ (if showHitFlash then RGB 1 0.4 0.4 else RGB 0 1 1)
+                  & messagesToSend .~ messages
           deltaPos = dT .* Vec2 0 (-speed)
           dT = input ^. worldInput . deltaTime
           (Vec2 x y) = enemy ^. pos
           isOffScreen = y < (-1.2)
           speed = 0.35
 
-          gotHit = any isBullet (input ^. collisionInput)
+          gotHit = damageTaken > 0
+          damageTaken = messageDamageTotal (input ^. messageInput)
           gotHitTimer' = updateTimer gotHit dT 0.05 gotHitTimer
           showHitFlash = gotHitTimer' > 0
-          damageTaken = if gotHit then 1 else 0
           health' = updateHealth dT damageTaken health
+
+          collisions = filter isPlayer . findCollisions enemy $ input ^. worldInput . entities
+          messages = map (\e -> MessageSend e (DamageMessage 1)) collisions
 
 newEnemySpawner :: Vec2f -> WorldEntity
 newEnemySpawner p = updateSpawner 0 nullInput spawner

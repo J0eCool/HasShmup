@@ -19,8 +19,11 @@ newBullet pos' = updateBullet removeTimer nullInput bullet
 updateBullet :: Float -> WorldInput -> WorldEntity -> WorldEntity
 updateBullet removeTimer input bullet = bullet
     & update .~ updateBullet removeTimer'
-    & shouldRemove .~ (removeTimer' <= 0 || any isEnemy (input ^. collisionInput))
+    & shouldRemove .~ (removeTimer' <= 0 || length collisions > 0)
     & pos +~ dT .* vel
+    & messagesToSend .~ messages
     where removeTimer' = removeTimer - dT
           dT = input ^. worldInput . deltaTime
           vel = Vec2 0 4
+          collisions = filter isEnemy . findCollisions bullet $ input ^. worldInput . entities
+          messages = map (\e -> MessageSend e (DamageMessage 1)) collisions
