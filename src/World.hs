@@ -11,6 +11,7 @@ import Entity
 import EntityType
 import Math.Rect
 import Math.Vec
+import Message
 import PlayerInput
 
 import System.Random

@@ -6,6 +6,7 @@ import Draw
 import Entity
 import EntityType
 import Math.Vec
+import Message
 import PlayerInput
 import World
 

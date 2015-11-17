@@ -6,11 +6,3 @@ data EntityType =
     | EnemyType
     | BulletType
     deriving (Eq, Show)
-
-data EntityMessageSend r =
-      Message r EntityMessage
-    | Broadcast BroadcastMessage
-
-data EntityMessage =
-      NoMessage
-    | DamageMessage Int

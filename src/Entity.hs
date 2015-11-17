@@ -8,6 +8,7 @@ import Draw
 import EntityType
 import Math.Rect
 import Math.Vec
+import Message
 
 type Identifier = Int
 
