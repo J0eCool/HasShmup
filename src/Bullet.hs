@@ -4,6 +4,7 @@ import Control.Lens
 
 import Draw
 import Entity
+import EntityType
 import Math.Vec
 import PlayerInput
 import World
@@ -26,4 +27,4 @@ updateBullet removeTimer input bullet = bullet
           dT = input ^. worldInput . deltaTime
           vel = Vec2 0 4
           collisions = filter isEnemy . findCollisions bullet $ input ^. worldInput . entities
-          messages = map (\e -> MessageSend e (DamageMessage 1)) collisions
+          messages = map (\e -> Message e (DamageMessage 1)) collisions

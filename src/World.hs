@@ -8,6 +8,7 @@ import Data.List
 import qualified Data.Map as Map
 
 import Entity
+import EntityType
 import Math.Rect
 import Math.Vec
 import PlayerInput
@@ -80,7 +81,7 @@ worldUpdateEntities input world = world
 worldUpdateMessages world = world
     & lastFrameMessages .~ messageMap
     where messages = concatMap (^. messagesToSend) (world ^. entities)
-          addMessage m (MessageSend e msg) = Map.insertWith (++) e [msg] m 
+          addMessage m (Message e msg) = Map.insertWith (++) e [msg] m 
           messageMap = foldl addMessage Map.empty messages
 
 worldRemoveEntities world = world

@@ -5,6 +5,7 @@ import Control.Monad
 
 import Draw
 import Entity
+import EntityType
 import Health
 import Math.Vec
 import PlayerInput
@@ -38,7 +39,7 @@ updateEnemy health gotHitTimer input enemy = enemy'
           health' = updateHealth dT damageTaken health
 
           collisions = filter isPlayer . findCollisions enemy $ input ^. worldInput . entities
-          messages = map (\e -> MessageSend e (DamageMessage 1)) collisions
+          messages = map (\e -> Message e (DamageMessage 1)) collisions
 
 newEnemySpawner :: Vec2f -> WorldEntity
 newEnemySpawner p = updateSpawner 0 nullInput spawner

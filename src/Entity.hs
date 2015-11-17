@@ -5,29 +5,18 @@ module Entity where
 import Control.Lens
 
 import Draw
+import EntityType
 import Math.Rect
 import Math.Vec
 
-data EntityType =
-      NoType
-    | PlayerType
-    | EnemyType
-    | BulletType
-    deriving (Eq, Show)
-
 type Identifier = Int
-
-data EntityMessageSend i = MessageSend (Entity i) EntityMessage
-data EntityMessage =
-      DamageMessage Int
-    | NullMessage
 
 data Entity i = Entity
     { _entityId :: Identifier
     , _entityType :: EntityType
     , _update :: i -> Entity i -> Entity i
     , _entitiesToSpawn :: [Entity i]
-    , _messagesToSend :: [EntityMessageSend i]
+    , _messagesToSend :: [EntityMessageSend (Entity i)]
     , _shouldRemove :: Bool
     , _pos :: Vec2f
     , _size :: Vec2f

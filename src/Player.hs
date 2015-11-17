@@ -8,6 +8,7 @@ import Control.Monad
 import Bullet
 import Draw
 import Entity
+import EntityType
 import Health
 import Math.Vec
 import PlayerInput
