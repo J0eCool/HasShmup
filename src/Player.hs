@@ -4,6 +4,7 @@ module Player (newPlayer) where
 
 import Control.Lens
 import Control.Monad
+import Data.Maybe
 
 import Bullet
 import Draw
@@ -39,24 +40,28 @@ timePerShot = timePerBurst / shotsPerBurst
 
 
 newPlayer :: Vec2f -> WorldEntity
-newPlayer p = updatePlayer info nullInput player
-    where player = newEntity PlayerType
-                   & pos .~ p
-                   & size .~ Vec2 0.1 0.15
-                   & color .~ RGB 1 0 0.5
-          info = newInfo health
-          health = 3
+newPlayer p = updatePlayer info nullInput (newEntity PlayerType)
+    & pos .~ p
+    & size .~ Vec2 0.1 0.15
+    & color .~ RGB 1 0 0.5
+    & entitiesToSpawn .~ [newPlayerHealthBar h]
+    & broadcastsToSend .~ [PlayerHealthUpdated h]
+    where info = newInfo maxHealth
+          h = info ^. health
+          maxHealth = 3
 
 updatePlayer info input player = player'
     where player' = player
                     & update .~ updatePlayer info'
                     & entitiesToSpawn .~ toSpawn
                     & pos %~ clampPos . (+ deltaPos)
-                    & draw .~ drawPlayer info'
-                    & shouldRemove .~ isDead (info' ^. health)
+                    & draw .~ when (isNotFlashing health') . drawEnt
+                    & shouldRemove .~ isDead health'
+                    & broadcastsToSend .~ broadcasts
 
           pInput = input ^. playerInput
           info' = updateInfo dT damageTaken shootPressed info
+          health' = info' ^. health
           deltaPos = (speed * dT) .* dir
           dir = Vec2 (fromIntegral $ xDir pInput) (negate . fromIntegral $ yDir pInput)
           dT = input ^. worldInput . deltaTime
@@ -68,10 +73,18 @@ updatePlayer info input player = player'
           shootPressed = isShooting pInput
 
           toSpawn = if shouldShoot info then [newBullet curPos] else []
+          broadcasts = if (info ^. health) /= health'
+                       then [PlayerHealthUpdated health']
+                       else []
 
           speed = 1
 
-drawPlayer info player = do
-    when (isNotFlashing h) $ drawEnt player
-    drawHealthBar 0.5 h
-    where h = info ^. health
+newPlayerHealthBar h = updateBar h nullInput (newEntity NoType)
+
+updateBar h input bar = bar
+    & update .~ updateBar h'
+    & draw .~ (\_ -> drawHealthBar 0.5 h')
+    where h' = fromMaybe h updatedHealth
+          updatedHealth = listToMaybe . mapMaybe toHealth $ input ^. broadcastInput
+          toHealth (PlayerHealthUpdated h) = Just h
+          toHealth _ = Nothing

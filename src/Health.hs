@@ -15,8 +15,15 @@ data Health = Health
     , _invincibleTimer :: Float
     , _maxInvincibleTime :: Float
     }
-    deriving (Eq)
+    deriving (Show)
 makeLenses ''Health
+
+instance Eq Health where
+    a == b =
+        eq currentHealth &&
+        eq maxHealth &&
+        eq maxInvincibleTime
+        where eq l = a ^. l == b ^. l
 
 modifyIf cond f x = if cond then f x else x
 

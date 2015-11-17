@@ -18,6 +18,7 @@ data Entity i = Entity
     , _update :: i -> Entity i -> Entity i
     , _entitiesToSpawn :: [Entity i]
     , _messagesToSend :: [EntityMessageSend (Entity i)]
+    , _broadcastsToSend :: [BroadcastMessage]
     , _shouldRemove :: Bool
     , _pos :: Vec2f
     , _size :: Vec2f
@@ -38,12 +39,14 @@ instance Show (Entity i) where
     show e = show (e ^. entityType) ++ "_" ++ show (e ^. entityId)
 
 newEntity t = ent
-    where ent = Entity idNum t update' entitiesToSpawn' messagesToEmit'
+    where ent = Entity idNum t update' entitiesToSpawn'
+                messagesToSend' broadcastsToSend'
                 shouldRemove' pos' size' color' draw'
           idNum = 0
-          update' _ _ = ent
+          update' _ = id
           entitiesToSpawn' = []
-          messagesToEmit' = []
+          messagesToSend' = []
+          broadcastsToSend' = []
           shouldRemove' = False
           pos' = Vec2 0 0
           size' = Vec2 0 0
