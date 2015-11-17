@@ -101,5 +101,15 @@ worldRemoveEntities world = world
 worldDraw :: World -> IO ()
 worldDraw world = mapM_ (callOnSelf draw) (world ^. entities)
 
+------------------------
+
 randomRoll :: Float -> StdGen -> Bool
 randomRoll prob = (<= prob) . fst . randomR (1, 100)
+
+moveRemOffscreen vel input ent = ent
+    & pos +~ deltaPos
+    & shouldRemove ||~ isOffScreen
+    where deltaPos = dT .* vel
+          dT = input ^. worldInput . deltaTime
+          Vec2 _ y = ent ^. pos
+          isOffScreen = y < (-1.5) || y > 1.5

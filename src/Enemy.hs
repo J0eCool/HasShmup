@@ -20,19 +20,15 @@ newEnemy pos' = updateEnemy health 0 nullInput enemy
                  & size .~ Vec2 0.1 0.15
           health = newHealth 5 0.01
 
-updateEnemy health gotHitTimer input enemy = enemy'
+updateEnemy health gotHitTimer input enemy = moveRemOffscreen (Vec2 0 (-0.35)) input enemy'
     where enemy' = enemy
-                  & pos +~ deltaPos
                   & update .~ updateEnemy health' gotHitTimer'
-                  & shouldRemove .~ (isDead health || isOffScreen)
+                  & shouldRemove ||~ isDead health
                   & color .~ (if showHitFlash then RGB 1 0.4 0.4 else RGB 0 1 1)
                   & entitiesToSpawn .~ toSpawn
                   & messagesToSend .~ messages
-          deltaPos = dT .* Vec2 0 (-speed)
+          curPos = enemy ^. pos
           dT = input ^. worldInput . deltaTime
-          curPos@(Vec2 _ y) = enemy ^. pos
-          isOffScreen = y < (-1.2)
-          speed = 0.35
 
           gotHit = damageTaken > 0
           damageTaken = messageDamageTotal (input ^. messageInput)
@@ -52,18 +48,12 @@ newItem p = updateItem nullInput (newEntity ItemType)
     & color .~ RGB 0 0.8 0
     & update .~ updateItem
 
-updateItem input item = item
-    & pos +~ deltaPos
-    & shouldRemove .~ (didCollide || isOffScreen)
+updateItem input item = moveRemOffscreen (Vec2 0 (-0.25)) input item
+    & shouldRemove ||~ didCollide
     & messagesToSend .~ messages
     where collisions = filter isPlayer . findCollisions item $ input ^. worldInput . entities
           messages = map (Message UpgradeMessage) collisions
           didCollide = not . null $ collisions
-          deltaPos = dT .* Vec2 0 (-speed)
-          dT = input ^. worldInput . deltaTime
-          curPos@(Vec2 _ y) = item ^. pos
-          isOffScreen = y < (-1.2)
-          speed = 0.25
 
 newEnemySpawner :: Vec2f -> WorldEntity
 newEnemySpawner p = updateSpawner 0 nullInput spawner
