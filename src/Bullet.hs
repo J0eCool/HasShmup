@@ -4,9 +4,9 @@ import Control.Lens
 
 import Draw
 import Entity
+import Math.Vec
 import PlayerInput
 import World
-import Vec
 
 newBullet :: Vec2f -> WorldEntity
 newBullet pos' = updateBullet removeTimer nullInput bullet

@@ -9,10 +9,10 @@ import Bullet
 import Draw
 import Entity
 import Health
+import Math.Vec
 import PlayerInput
 import Time
 import World
-import Vec
 
 data PlayerInfo = PlayerInfo
     { _health :: Health

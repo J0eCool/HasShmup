@@ -6,10 +6,10 @@ import Control.Monad
 import Draw
 import Entity
 import Health
+import Math.Vec
 import PlayerInput
 import Time
 import World
-import Vec
 
 newEnemy :: Vec2f -> WorldEntity
 newEnemy pos' = updateEnemy health 0 nullInput enemy

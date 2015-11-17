@@ -10,7 +10,8 @@
     [
         {
             "name": "Cabal Run",
-            "cmd": ["cabal", "run"]
+            "cmd": ["cabal", "run"],
+            "working_dir": "$project_path"
         }
     ]
 }

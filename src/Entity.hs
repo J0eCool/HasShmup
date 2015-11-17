@@ -5,8 +5,8 @@ module Entity where
 import Control.Lens
 
 import Draw
-import Rect
-import Vec
+import Math.Rect
+import Math.Vec
 
 data EntityType =
       NoType

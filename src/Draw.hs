@@ -2,8 +2,8 @@ module Draw where
 
 import Graphics.Rendering.OpenGL hiding (Rect, RGB)
 
-import Rect
-import Vec
+import Math.Rect
+import Math.Vec
 
 data RGB = RGB Float Float Float
 

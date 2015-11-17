@@ -5,8 +5,8 @@ module Health where
 import Control.Lens
 
 import Draw
-import Math
-import Rect
+import Math.Math
+import Math.Rect
 import Time
 
 data Health = Health

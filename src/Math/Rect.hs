@@ -1,6 +1,6 @@
-module Rect where
+module Math.Rect where
 
-import Vec
+import Math.Vec
 
 data Rect = Rect Vec2f Vec2f
     deriving (Eq, Show)

@@ -8,9 +8,9 @@ import Data.List
 import qualified Data.Map as Map
 
 import Entity
+import Math.Rect
+import Math.Vec
 import PlayerInput
-import Rect
-import Vec
 
 import System.Random
 

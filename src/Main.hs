@@ -4,8 +4,8 @@ import Graphics.Rendering.OpenGL
 import Graphics.UI.GLUT
 import System.Exit
 
+import Math.Vec
 import PlayerInput
-import Vec
 import World
 
 import Enemy
