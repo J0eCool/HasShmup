@@ -40,7 +40,7 @@ isNotFlashing health = not invin || isEvenFrame
           isEvenFrame = even $ floor (health ^. invincibleTimer * 20) `mod` 2
 
 drawHealthBar maxWidth health = do
-    colorRGB $ RGB 0.5 0 0
+    colorRGB $ RGB 0.35 0 0
     drawTopLeftRect $ rect x y maxWidth height
     colorRGB $ RGB 1 0 0
     drawTopLeftRect $ rect x y width height

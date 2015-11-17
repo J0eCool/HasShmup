@@ -83,9 +83,3 @@ isBullet = isOfType BulletType
 
 isPlayer :: Entity i -> Bool
 isPlayer = isOfType PlayerType
-
----------------------------------------
-
-messageDamageTotal = sum . map damage
-    where damage (DamageMessage d) = d
-          damage _ = 0

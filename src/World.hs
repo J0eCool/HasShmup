@@ -6,6 +6,7 @@ import Control.Lens
 import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
+import System.Random
 
 import Entity
 import EntityType
@@ -13,8 +14,6 @@ import Math.Rect
 import Math.Vec
 import Message
 import PlayerInput
-
-import System.Random
 
 data WorldInput = WInput
     { _playerInput :: PlayerInput
@@ -87,13 +86,20 @@ worldUpdateMessages world = world
     & lastFrameMessages .~ messageMap
     & lastFrameBroadcasts .~ broadcasts
     where messages = concatMap (^. messagesToSend) ents
-          addMessage m (Message e msg) = Map.insertWith (++) e [msg] m 
+          addMessage m (Message msg e) = Map.insertWith (++) e [msg] m 
           messageMap = foldl addMessage Map.empty messages
           broadcasts = concatMap (^. broadcastsToSend) ents
           ents = world ^. entities
 
 worldRemoveEntities world = world
-    & entities %~ filter (not . (^. shouldRemove))
+    & entities .~ remaining
+    & addEntities addedByRemoved
+    where (removed, remaining) = partition (^. shouldRemove) ents
+          addedByRemoved = concatMap (^. entitiesToSpawn) removed
+          ents = world ^. entities
 
 worldDraw :: World -> IO ()
 worldDraw world = mapM_ (callOnSelf draw) (world ^. entities)
+
+randomRoll :: Float -> StdGen -> Bool
+randomRoll prob = (<= prob) . fst . randomR (1, 100)

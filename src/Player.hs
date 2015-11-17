@@ -21,23 +21,24 @@ data PlayerInfo = PlayerInfo
     { _health :: Health
     , _burstTimer :: Float
     , _shotTimer :: Float
+    , _bulletLevel :: Int
     }
     deriving (Eq)
 makeLenses ''PlayerInfo
 
-newInfo health = PlayerInfo (newHealth health 1.4) 0 0
+newInfo health = PlayerInfo (newHealth health 1.4) 0 0 1
 
-updateInfo dT damageTaken shootPressed info = info
+updateInfo dT damageTaken shootPressed upgrades info = info
     & health %~ updateHealth dT damageTaken
     & burstTimer %~ updateTimer shootPressed dT timePerBurst
     & shotTimer %~ updateTimer (shouldShoot info) dT timePerShot
+    & bulletLevel +~ upgrades
 
 shouldShoot info = info ^. burstTimer > 0 && info ^. shotTimer <= 0
 
 shotsPerBurst = 2
 timePerBurst = 0.15
 timePerShot = timePerBurst / shotsPerBurst
-
 
 newPlayer :: Vec2f -> WorldEntity
 newPlayer p = updatePlayer info nullInput (newEntity PlayerType)
@@ -59,8 +60,7 @@ updatePlayer info input player = player'
                     & shouldRemove .~ isDead health'
                     & broadcastsToSend .~ broadcasts
 
-          pInput = input ^. playerInput
-          info' = updateInfo dT damageTaken shootPressed info
+          info' = updateInfo dT damageTaken shootPressed upgrades info
           health' = info' ^. health
           deltaPos = (speed * dT) .* dir
           dir = Vec2 (fromIntegral $ xDir pInput) (negate . fromIntegral $ yDir pInput)
@@ -68,11 +68,16 @@ updatePlayer info input player = player'
           curPos = player ^. pos
           clampPos = clampVec (Vec2 (-0.95) (-0.925)) (Vec2 0.95 0.15)
 
+          inputMessages = input ^. messageInput
+          damageTaken = messageDamageTotal inputMessages
           didCollide = damageTaken > 0
-          damageTaken = messageDamageTotal (input ^. messageInput)
+          upgrades = messageCount (boolToInt . isMessageUpgrade) inputMessages
+
+          pInput = input ^. playerInput
           shootPressed = isShooting pInput
 
-          toSpawn = if shouldShoot info then [newBullet curPos] else []
+          toSpawn = if shouldShoot info then [newBullet damage curPos] else []
+          damage = info ^. bulletLevel
           broadcasts = if (info ^. health) /= health'
                        then [PlayerHealthUpdated health']
                        else []

@@ -2,7 +2,8 @@ module EntityType where
 
 data EntityType =
       NoType
-    | PlayerType
-    | EnemyType
     | BulletType
+    | EnemyType
+    | ItemType
+    | PlayerType
     deriving (Eq, Show)
