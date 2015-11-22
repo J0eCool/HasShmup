@@ -19,3 +19,7 @@ instance Num Fixed where
 
 instance Show Fixed where
     show (Fixed x) = show (fromInteger x / fromInteger fixedSize)
+
+instance Fractional Fixed where
+    Fixed x / Fixed y = Fixed $ (x * fixedSize) `div` y
+    fromRational n = fixed n
