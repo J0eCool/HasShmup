@@ -5,6 +5,7 @@ module Player (newPlayer) where
 import Control.Lens
 import Control.Monad
 import Data.Maybe
+import System.Random
 
 import Bullet
 import Draw
@@ -76,8 +77,13 @@ updatePlayer info input player = player'
           pInput = input ^. playerInput
           shootPressed = isShooting pInput
 
-          toSpawn = if shouldShoot info then [newBullet damage curPos] else []
+          toSpawn = if shouldShoot info then [newBullet damage bulletVel curPos] else []
+          bulletVel = bulletSpeed .* unitVec (deltaAng + pi / 2)
+          deltaAng = fst $ randomR (-spread, spread) (input ^. randInput)
+          spread = 0.15
           damage = info ^. bulletLevel
+          bulletSpeed = 4
+
           broadcasts = if (info ^. health) /= health'
                        then [PlayerHealthUpdated health']
                        else []
