@@ -7,6 +7,7 @@ import Control.Lens
 import Draw
 import Math.Math
 import Math.Rect
+import Math.Vec
 import Time
 
 data Health = Health
@@ -44,8 +45,12 @@ drawHealthBar maxWidth health = do
     drawTopLeftRect $ rect x y maxWidth height
     colorRGB $ RGB 1 0 0
     drawTopLeftRect $ rect x y width height
+    drawString hpStr (Vec2 (x + maxWidth / 2) y)
     where (x, y) = (-0.9, -0.9)
           height = 0.1
           width = pct * maxWidth
-          pct = clamp 0 1 $ f currentHealth / f maxHealth
-          f = fromIntegral . (health ^.)
+          pct = clamp 0 1 $ floatVal currentHealth / floatVal maxHealth
+          floatVal = fromIntegral . (health ^.)
+          hpStr = show (health ^. currentHealth)
+                  ++ "/"
+                  ++ show (health ^. maxHealth)
